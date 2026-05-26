@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manga.Api", "Manga.Api\Manga.Api.csproj", "{7033F11B-0B37-40B3-871E-BE7EB71B25EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manga.Repository", "Manga.Repository\Manga.Repository.csproj", "{82072CC7-A166-4B12-836B-74D5F51DA6E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manga.Service", "Manga.Service\Manga.Service.csproj", "{B2147280-1C4E-42A0-8B65-6480CE1EF355}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7033F11B-0B37-40B3-871E-BE7EB71B25EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7033F11B-0B37-40B3-871E-BE7EB71B25EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7033F11B-0B37-40B3-871E-BE7EB71B25EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7033F11B-0B37-40B3-871E-BE7EB71B25EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82072CC7-A166-4B12-836B-74D5F51DA6E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82072CC7-A166-4B12-836B-74D5F51DA6E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82072CC7-A166-4B12-836B-74D5F51DA6E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82072CC7-A166-4B12-836B-74D5F51DA6E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2147280-1C4E-42A0-8B65-6480CE1EF355}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2147280-1C4E-42A0-8B65-6480CE1EF355}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2147280-1C4E-42A0-8B65-6480CE1EF355}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2147280-1C4E-42A0-8B65-6480CE1EF355}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
