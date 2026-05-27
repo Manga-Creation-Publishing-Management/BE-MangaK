@@ -1,4 +1,6 @@
+using Manga.Middlewares;
 using Manga.Repository.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,15 +12,16 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//     options.UseNpgsql(
-//         builder.Configuration.GetConnectionString("DefaultConnection")
-//     )
-// );
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
 
-// builder.Services.AddJwtServices(builder.Configuration);
-// builder.Services.AddSwaggerServices();
+// ─── Middleware ────────────────────────────────────────────────────────────────
+builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -27,6 +30,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
