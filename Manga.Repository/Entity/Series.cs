@@ -9,7 +9,9 @@ public class Series: BaseEntity<Guid>, IAuditableEntity
     public required string Description { get; set; }
     public required string Genre { get; set; }
     public string? CoverFile { get; set; }
+    // public string? CoverFilePublicId { get; set; } 
     public string? NameFile { get; set; }
+    public string? NameFilePublicId { get; set; } 
     public SeriesStatus Status { get; set; }
     
     public Guid CreatedById  { get; set; }
