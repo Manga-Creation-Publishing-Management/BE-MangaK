@@ -7,7 +7,6 @@ public class Request
 {
     public class CreateChapterRequest
     {
-        public required int ChapterNumher { get; set; }
         public required string Title { get; set; }
         public string? Summary { get; set; }
         public IFormFile? ManuscriptFileUrl { get; set; }

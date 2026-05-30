@@ -2,6 +2,8 @@ using Manga.Middlewares;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
+using CloudinaryService = Manga.Service.CloudinaryService;
+using MediaService = Manga.Service.MediaService;
 using ChapterService = Manga.Service.Chapter;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -45,12 +45,10 @@ public class Service: IService
         if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
             throw new Exception("Series need approved before create chapter");
 
-        var isChapterNumberExist = await _dbContext.Chapters
-            .AnyAsync(c => c.SeriesId == seriesId && c.ChapterNumber == request.ChapterNumher);
+        var lastChapterNumber = await  _dbContext.Chapters.Where(c => c.SeriesId == seriesId && !c.IsDeleted)
+            .MaxAsync(c => (int?)c.ChapterNumber) ?? 0;
         
-        if(isChapterNumberExist)
-            throw new Exception($"Chapter {request.ChapterNumher} already exists in series {seriesId}");
-
+        var nextChapterNumber = lastChapterNumber + 1;
         string? manuscriptFileUrl = null;
         if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
         {
@@ -61,7 +59,7 @@ public class Service: IService
         var chapter = new Repository.Entity.Chapter()
         {
             Id = Guid.NewGuid(),
-            ChapterNumber = request.ChapterNumher,
+            ChapterNumber = nextChapterNumber,
             Title = request.Title,
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,

@@ -16,7 +16,7 @@ public class ChapterController: ControllerBase
     }
     
     [HttpPost("create-chapter")]
-    public async Task<IActionResult> CreateChapter(Guid seriesId, [FromBody] Request.CreateChapterRequest request)
+    public async Task<IActionResult> CreateChapter(Guid seriesId, [FromForm] Request.CreateChapterRequest request)
     {
         var createSeries = await _chapterService.CreateChapter(seriesId, request);
         return Ok(ApiResponseFactory.SuccessResponse(createSeries, "Create Chapter Successfully", HttpContext.TraceIdentifier));
