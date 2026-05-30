@@ -2,5 +2,5 @@
 
 public interface IService
 {
-    Task<Response.IdentityResponse> Login(LoginRequest request);
+    Task<Response.IdentityResponse> Login(Request request);
 }

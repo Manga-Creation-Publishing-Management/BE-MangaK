@@ -16,7 +16,7 @@ public class Service : IService
         _jwtService = jwtService;
     }
 
-    public async Task<Response.IdentityResponse> Login(LoginRequest request)
+    public async Task<Response.IdentityResponse> Login(Request request)
     {
         var user = await _db.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)

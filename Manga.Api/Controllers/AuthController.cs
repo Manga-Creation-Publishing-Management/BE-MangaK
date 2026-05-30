@@ -4,16 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 namespace Manga.Api.Controllers;
 [ApiController]
 [Route("[controller]")]
-public class IdentityController : ControllerBase
+public class AuthController : ControllerBase
 {   
     private readonly IService _identityService;
-    public IdentityController(IService identityService)
+    public AuthController(IService identityService)
     {
         _identityService = identityService;
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] Request request)
     {
         try
         {
