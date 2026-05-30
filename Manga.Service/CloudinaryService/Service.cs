@@ -10,15 +10,16 @@ namespace Manga.Service.CloudinaryService;
 public class Service:IService
 {
     private readonly Cloudinary _cloudinary;
-    private readonly CloudinaryOptions _cloudinaryOptions = new();
-
+    
     public Service(IConfiguration configuration)
     {
-        configuration.GetSection(nameof(CloudinaryOptions)).Bind(_cloudinaryOptions);
+        var options = configuration.GetSection("CloudinaryOptions").Get<CloudinaryOptions>()
+                      ?? throw new InvalidOperationException("CloudinaryOptions is not configured.");
+
         _cloudinary = new Cloudinary(new Account(
-            _cloudinaryOptions.CloudName,
-            _cloudinaryOptions.ApiKey,
-            _cloudinaryOptions.ApiSecret));
+            options.CloudName,
+            options.ApiKey,
+            options.ApiSecret));
     }
 
     public async Task<string> UploadImageAsync(IFormFile file)

@@ -28,4 +28,11 @@ public class ChapterController: ControllerBase
         var result = await _chapterService.GetAllChapters(seriesId);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get All Chapter Successfully", HttpContext.TraceIdentifier));
     }
+ 
+    [HttpGet("get-chapter-details")]
+    public async Task<IActionResult> GetChapterDetail(Guid seriesId, Guid chapterId)
+    {
+        var result = await _chapterService.GetChapterDetails(seriesId, chapterId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Chapter Chapter Successfully", HttpContext.TraceIdentifier));
+    }
 }

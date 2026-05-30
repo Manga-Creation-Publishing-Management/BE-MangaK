@@ -39,7 +39,10 @@ public class Service: IService
 
         var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == seriesId);
 
-        if (series!.CreatedById != userIdGuid)
+        if (series == null)
+            throw new KeyNotFoundException("Series not found");
+        
+        if (series.CreatedById != userIdGuid)
             throw new UnauthorizedAccessException("You are not the creator for series");
         
         if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
@@ -111,5 +114,46 @@ public class Service: IService
         }).ToList();
 
         return result;
+    }
+
+    public async Task<Response.GetChapterDetailsResponse> GetChapterDetails(Guid seriesId, Guid chapterId)
+    {
+        var chapter = await _dbContext.Chapters
+            .Where(c => c.Id == chapterId && c.SeriesId == seriesId && !c.IsDeleted)
+            .Include(c => c.Series)
+            .Include(c => c.MangaTasks.Where(t => !t.IsDeleted))
+            .ThenInclude(t => t.AssignedTo)
+            .FirstOrDefaultAsync();
+
+        if (chapter == null)
+            throw new KeyNotFoundException("Chapter not found");
+        
+        var tasks = chapter.MangaTasks
+            .OrderBy(t => t.CreatedAt)
+            .Select(t => new Response.TaskSummary()
+            {
+                MangaTaskId = t.Id,
+                TaskTitle = t.TaskTitle,
+                TaskDescription = t.TaskDescription,
+                Status = t.Status,
+                Deadline = t.Deadline,
+                AssignedTo = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
+            }).ToList();
+
+        return new Response.GetChapterDetailsResponse()
+        {
+            ChapterId = chapter.Id,
+            ChapterNumber = chapter.ChapterNumber,
+            Title = chapter.Title,
+            Summary = chapter.Summary,
+            ManuscriptFileUrl = chapter.ManuscriptFileUrl,
+            ChapterFileUrl = chapter.ChapterFileUrl,
+            Status = chapter.Status,
+            SeriesId = chapter.SeriesId,
+            SeriesTitle = chapter.Series.Title,
+            CreatedAt = chapter.CreatedAt,
+            UpdatedAt = chapter.UpdatedAt,
+            Tasks = tasks
+        };
     }
 }

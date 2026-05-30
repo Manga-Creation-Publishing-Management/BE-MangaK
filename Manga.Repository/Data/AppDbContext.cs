@@ -49,6 +49,7 @@ public class AppDbContext: DbContext
             builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
             builder.HasOne(u => u.DecidedSchedule).WithOne(p => p.DecidedBy).HasForeignKey<PublishingSchedule>(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
         });
         
         modelBuilder.Entity<Series>(builder =>
@@ -58,6 +59,7 @@ public class AppDbContext: DbContext
             builder.Property(s => s.Genre).IsRequired().HasMaxLength(100);
             builder.Property(s => s.CoverFile).HasMaxLength(500);
             builder.Property(s => s.NameFile).HasMaxLength(255);
+            builder.Property(s => s.NameFilePublicId).HasMaxLength(500);
             builder.Property(s => s.Status).IsRequired().HasConversion<string>().HasMaxLength(50).HasDefaultValue(SeriesStatus.Processing);
             
             builder.HasMany(s => s.Chapters).WithOne(c => c.Series).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
