@@ -1,5 +1,8 @@
 ﻿using Manga.Repository.Data;
+using Manga.Repository.Entity;
+using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Manga.Service.Chapter;
 
@@ -7,9 +10,81 @@ public class Service: IService
 {
     private readonly AppDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    
-    public Task<Response.CreateChapterResponse> CreateChapter(Guid seriesId, Request.CreateChapterRequest request)
+    private readonly MediaService.IService _mediaService;
+
+    public Service(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor, MediaService.IService mediaService)
     {
-        throw new NotImplementedException();
+        _dbContext = dbContext;
+        _httpContextAccessor = httpContextAccessor;
+        _mediaService = mediaService;
+    }
+
+    public async Task<Response.CreateChapterResponse> CreateChapter(Guid seriesId, Request.CreateChapterRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User is not login");
+        
+        var userIdGuid = Guid.Parse(userId!);
+
+        var mangakaUser = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+
+        if (mangakaUser == null)
+            throw new KeyNotFoundException("User not found");
+
+        if (mangakaUser.Role != UserRole.Mangaka)
+            throw new UnauthorizedAccessException("Only Mangaka can create chapter");
+
+        var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == seriesId);
+
+        if (series!.CreatedById != userIdGuid)
+            throw new UnauthorizedAccessException("You are not the creator for series");
+        
+        if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
+            throw new Exception("Series need approved before create chapter");
+
+        var isChapterNumberExist = await _dbContext.Chapters
+            .AnyAsync(c => c.SeriesId == seriesId && c.ChapterNumber == request.ChapterNumher);
+        
+        if(isChapterNumberExist)
+            throw new Exception($"Chapter {request.ChapterNumher} already exists in series {seriesId}");
+
+        string? manuscriptFileUrl = null;
+        if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
+        {
+            var result = await _mediaService.UploadFileAsync(request.ManuscriptFileUrl);
+            manuscriptFileUrl = result.FileUrl;
+        }
+
+        var chapter = new Repository.Entity.Chapter()
+        {
+            Id = Guid.NewGuid(),
+            ChapterNumber = request.ChapterNumher,
+            Title = request.Title,
+            Summary = request.Summary,
+            ManuscriptFileUrl = manuscriptFileUrl,
+            Status = ChapterStatus.Processing,
+            SeriesId = seriesId,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+        
+        await _dbContext.Chapters.AddAsync(chapter);
+        await _dbContext.SaveChangesAsync();
+
+        return new Response.CreateChapterResponse()
+        {
+            ChapterId = chapter.Id,
+            ChapterNumber = chapter.ChapterNumber,
+            Title = chapter.Title,
+            Summary = chapter.Summary,
+            ManuscriptFileUrl = manuscriptFileUrl,
+            Status = chapter.Status,
+            SeriesId = seriesId,
+            SeriesTitle = series.Title,
+            CreateAt = chapter.CreatedAt
+        };
+
     }
 }

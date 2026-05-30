@@ -2,6 +2,7 @@ using Manga.Middlewares;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
+using ChapterService = Manga.Service.Chapter;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,6 +12,8 @@ builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
