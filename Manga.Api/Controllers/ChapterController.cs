@@ -21,4 +21,11 @@ public class ChapterController: ControllerBase
         var createSeries = await _chapterService.CreateChapter(seriesId, request);
         return Ok(ApiResponseFactory.SuccessResponse(createSeries, "Create Chapter Successfully", HttpContext.TraceIdentifier));
     }
+
+    [HttpGet("get-all-chapters")]
+    public async Task<IActionResult> GetAllChapter(Guid seriesId)
+    {
+        var result = await _chapterService.GetAllChapters(seriesId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get All Chapter Successfully", HttpContext.TraceIdentifier));
+    }
 }

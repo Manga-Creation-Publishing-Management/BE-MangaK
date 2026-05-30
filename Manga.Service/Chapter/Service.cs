@@ -85,4 +85,31 @@ public class Service: IService
         };
 
     }
+
+    public async Task<List<Response.GetAllChaptersResponse>> GetAllChapters(Guid seriesId)
+    {
+        var seriesExist = await _dbContext.Series.AnyAsync(s => s.Id == seriesId && !s.IsDeleted);
+        
+        if (!seriesExist)
+            throw new KeyNotFoundException("Series not found");
+        
+        var chapter = await _dbContext.Chapters
+            .Where(c => c.SeriesId == seriesId && !c.IsDeleted)
+            .Include(c => c.MangaTasks)
+            .OrderBy(c => c.ChapterNumber)
+            .ToListAsync();
+
+        var result = chapter.Select(c => new Response.GetAllChaptersResponse()
+        {
+            ChapterId = c.Id,
+            ChapterNumber = c.ChapterNumber,
+            Title = c.Title,
+            Summary = c.Summary,
+            Status = c.Status,
+            TotalTask = c.MangaTasks.Count(t => !t.IsDeleted),
+            CreatedAt = c.CreatedAt
+        }).ToList();
+
+        return result;
+    }
 }

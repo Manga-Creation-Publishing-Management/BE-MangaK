@@ -3,4 +3,5 @@
 public interface IService
 {
     Task<Response.CreateChapterResponse> CreateChapter(Guid seriesId, Request.CreateChapterRequest request);
+    Task<List<Response.GetAllChaptersResponse>> GetAllChapters(Guid seriesId);
 }
