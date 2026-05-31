@@ -10,7 +10,7 @@ public class Response
         public Guid SeriesId { get; set; }
         public required string Title { get; set; }
         public required string Description { get; set; }
-        public required string Gener { get; set; }
+        public List<string> Categories { get; set; } = new(); 
         public string? CoverFile { get; set; }
         public string? NameFile { get; set; }
         public string? NameFilePublicId { get; set; } 
@@ -22,7 +22,7 @@ public class Response
     {
         public Guid SeriesId { get; set; }
         public required string Title { get; set; }
-        public required string Gener { get; set; }
+        public List<string> Categories { get; set; } = new(); 
         public string? CoverFile { get; set; }
         public SeriesStatus Status { get; set; }
         public string MangakaName { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ public class Response
        public Guid SeriesId { get; set; }
        public required string Title { get; set; }
        public required string Description { get; set; }
-       public required string Gener { get; set; }
+       public List<string> Categories { get; set; } = new(); 
        public string? CoverFile { get; set; }
        public string? NameFile { get; set; }
        public SeriesStatus Status { get; set; }

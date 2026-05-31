@@ -12,6 +12,19 @@ namespace Manga.Repository.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Categories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Categories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -45,7 +58,6 @@ namespace Manga.Repository.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     Description = table.Column<string>(type: "character varying(3000)", maxLength: 3000, nullable: false),
-                    Genre = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     CoverFile = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     NameFile = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     NameFilePublicId = table.Column<string>(type: "text", nullable: true),
@@ -77,6 +89,30 @@ namespace Manga.Repository.Migrations
                         column: x => x.ReviewedById,
                         principalTable: "Users",
                         principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CategorySeries",
+                columns: table => new
+                {
+                    CategoryId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SeriesId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CategorySeries", x => new { x.CategoryId, x.SeriesId });
+                    table.ForeignKey(
+                        name: "FK_CategorySeries_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CategorySeries_Series_SeriesId",
+                        column: x => x.SeriesId,
+                        principalTable: "Series",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -308,6 +344,11 @@ namespace Manga.Repository.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_CategorySeries_SeriesId",
+                table: "CategorySeries",
+                column: "SeriesId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Chapters_SeriesId_ChapterNumber",
                 table: "Chapters",
                 columns: new[] { "SeriesId", "ChapterNumber" },
@@ -414,6 +455,9 @@ namespace Manga.Repository.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "CategorySeries");
+
+            migrationBuilder.DropTable(
                 name: "ChapterVotings");
 
             migrationBuilder.DropTable(
@@ -427,6 +471,9 @@ namespace Manga.Repository.Migrations
 
             migrationBuilder.DropTable(
                 name: "PublishingSchedules");
+
+            migrationBuilder.DropTable(
+                name: "Categories");
 
             migrationBuilder.DropTable(
                 name: "MangaTasks");

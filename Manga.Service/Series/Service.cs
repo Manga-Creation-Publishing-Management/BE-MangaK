@@ -37,6 +37,16 @@ public class Service: IService
         if (managkUser.Role != UserRole.Mangaka)
             throw new UnauthorizedAccessException("Only mangaka is create series");
         
+        if (request.CategoryIds == null || request.CategoryIds.Count == 0)
+            throw new ArgumentException("At least one category is required.");
+        
+        var categories = await _dbContext.Categories
+            .Where(c => request.CategoryIds.Contains(c.Id))
+            .ToListAsync();
+
+        if (categories.Count != request.CategoryIds.Count)
+            throw new KeyNotFoundException("One or more categories not found.");
+        
         string? coverFileUrl = null;
         string? nameFileUrl = null;
         string? nameFilePublicId = null;
@@ -50,13 +60,12 @@ public class Service: IService
             nameFileUrl = uploadResult.FileUrl;
             nameFilePublicId = uploadResult.PublicId;
         }
-
+        
         var series = new Repository.Entity.Series
         {
             Id = Guid.NewGuid(),
             Title = request.Title,
             Description = request.Description,
-            Genre = request.Gener,
             CoverFile =  coverFileUrl,
             NameFile =  nameFileUrl,
             NameFilePublicId   = nameFilePublicId,
@@ -66,6 +75,14 @@ public class Service: IService
         };
         
         await _dbContext.Series.AddAsync(series);
+        
+        var categorySeriesList = categories.Select(c => new CategorySeries()
+        {
+            CategoryId = c.Id,
+            SeriesId   = series.Id,
+        }).ToList();
+
+        await _dbContext.CategorySeries.AddRangeAsync(categorySeriesList);
         await _dbContext.SaveChangesAsync();
 
         return new Response.CreateSeriesResponse
@@ -73,7 +90,7 @@ public class Service: IService
             SeriesId = series.Id,
             Title = series.Title,
             Description = series.Description,
-            Gener = series.Genre,
+            Categories  = categories.Select(c => c.Name).ToList(),
             CoverFile = series.CoverFile,
             NameFile = series.NameFile,
             NameFilePublicId   = series.NameFilePublicId,
@@ -88,17 +105,20 @@ public class Service: IService
             .Where(s => !s.IsDeleted)
             .Include(s => s.CreatedBy)
             .Include(s => s.Chapters)
+            .Include(s => s.CategorySeries)
+                .ThenInclude(cs => cs.Category) 
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
 
+        
         return seriesList.Select(s => new Response.GetAllSeriesResponse()
         {
             SeriesId = s.Id,
             Title = s.Title,
-            Gener = s.Genre,
+            Categories = s.CategorySeries.Select(cs => cs.Category.Name).ToList(),
             CoverFile = s.CoverFile,
             Status = s.Status,
-            MangakaName = s.CreatedBy.AuthorName ?? s.CreatedBy.FirstName + " " + s.CreatedBy.LastName,
+            MangakaName = s.CreatedBy.AuthorName ?? $"{s.CreatedBy.FirstName} {s.CreatedBy.LastName}",
             TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
             CreateAt = s.CreatedAt
         }).ToList();
@@ -109,6 +129,8 @@ public class Service: IService
         var series = await _dbContext.Series
             .Where(s => s.Id == seriesId && !s.IsDeleted)
             .Include(s => s.CreatedBy)
+            .Include(s => s.CategorySeries)
+                .ThenInclude(cs => cs.Category) 
             .Include(s => s.Chapters.Where(c => !c.IsDeleted))
             .FirstOrDefaultAsync();
 
@@ -131,7 +153,7 @@ public class Service: IService
             SeriesId = series.Id,
             Title = series.Title,
             Description = series.Description,
-            Gener = series.Genre,
+            Categories   = series.CategorySeries.Select(cs => cs.Category.Name).ToList(),
             CoverFile = series.CoverFile,
             NameFile = series.NameFile,
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,

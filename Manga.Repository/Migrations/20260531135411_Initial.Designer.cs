@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260530060221_Initial")]
+    [Migration("20260531135411_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -24,6 +24,40 @@ namespace Manga.Repository.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Manga.Repository.Entity.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
+                {
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("CategoryId", "SeriesId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("CategorySeries");
+                });
 
             modelBuilder.Entity("Manga.Repository.Entity.Chapter", b =>
                 {
@@ -376,11 +410,6 @@ namespace Manga.Repository.Migrations
                         .HasMaxLength(3000)
                         .HasColumnType("character varying(3000)");
 
-                    b.Property<string>("Genre")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -504,6 +533,25 @@ namespace Manga.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
+                {
+                    b.HasOne("Manga.Repository.Entity.Category", "Category")
+                        .WithMany("CategorySeries")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Manga.Repository.Entity.Series", "Series")
+                        .WithMany("CategorySeries")
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Series");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Chapter", b =>
@@ -667,6 +715,11 @@ namespace Manga.Repository.Migrations
                     b.Navigation("ReviewedBy");
                 });
 
+            modelBuilder.Entity("Manga.Repository.Entity.Category", b =>
+                {
+                    b.Navigation("CategorySeries");
+                });
+
             modelBuilder.Entity("Manga.Repository.Entity.Chapter", b =>
                 {
                     b.Navigation("ChapterVotes");
@@ -685,6 +738,8 @@ namespace Manga.Repository.Migrations
 
             modelBuilder.Entity("Manga.Repository.Entity.Series", b =>
                 {
+                    b.Navigation("CategorySeries");
+
                     b.Navigation("Chapters");
 
                     b.Navigation("Feedbacks");
