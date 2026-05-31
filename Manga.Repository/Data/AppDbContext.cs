@@ -135,10 +135,16 @@ public class AppDbContext: DbContext
             builder.HasIndex(p => p.DecidedById).IsUnique();
         });
         
-        modelBuilder.Entity<CategorySeries>().HasKey(cs => new { cs.CategoryId, cs.SeriesId });
-
-        modelBuilder.Entity<CategorySeries>().HasOne(cs => cs.Category).WithMany(c => c.CategorySeries).HasForeignKey(cs => cs.CategoryId);
-
-        modelBuilder.Entity<CategorySeries>().HasOne(cs => cs.Series).WithMany(s => s.CategorySeries).HasForeignKey(cs => cs.SeriesId);
+        modelBuilder.Entity<CategorySeries>(builder =>
+        {
+            builder.HasKey(cs => new { cs.CategoryId, cs.SeriesId });
+            builder.HasOne(cs => cs.Category).WithMany(c => c.CategorySeries).HasForeignKey(cs => cs.CategoryId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(cs => cs.Series).WithMany(s => s.CategorySeries).HasForeignKey(cs => cs.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<Category>(builder =>
+        {
+            builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
+        });
     }
 }
