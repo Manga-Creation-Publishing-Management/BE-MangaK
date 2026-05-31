@@ -21,6 +21,8 @@ public class AppDbContext: DbContext
     public DbSet<ChapterVoting> ChapterVotings { get; set; }
     public DbSet<Leaderboard> Leaderboards { get; set; }
     public DbSet<PublishingSchedule> PublishingSchedules { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<CategorySeries> CategorySeries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,7 +58,6 @@ public class AppDbContext: DbContext
         {
             builder.Property(s => s.Title).IsRequired().HasMaxLength(255);
             builder.Property(s => s.Description).IsRequired().HasMaxLength(3000);
-            builder.Property(s => s.Genre).IsRequired().HasMaxLength(100);
             builder.Property(s => s.CoverFile).HasMaxLength(500);
             builder.Property(s => s.NameFile).HasMaxLength(255);
             builder.Property(s => s.NameFilePublicId).HasMaxLength(500);
@@ -133,5 +134,11 @@ public class AppDbContext: DbContext
             builder.HasIndex(p => p.SeriesId).IsUnique();
             builder.HasIndex(p => p.DecidedById).IsUnique();
         });
+        
+        modelBuilder.Entity<CategorySeries>().HasKey(cs => new { cs.CategoryId, cs.SeriesId });
+
+        modelBuilder.Entity<CategorySeries>().HasOne(cs => cs.Category).WithMany(c => c.CategorySeries).HasForeignKey(cs => cs.CategoryId);
+
+        modelBuilder.Entity<CategorySeries>().HasOne(cs => cs.Series).WithMany(s => s.CategorySeries).HasForeignKey(cs => cs.SeriesId);
     }
 }
