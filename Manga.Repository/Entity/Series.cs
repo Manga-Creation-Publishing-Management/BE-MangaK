@@ -7,9 +7,10 @@ public class Series: BaseEntity<Guid>, IAuditableEntity
 {
     public required string Title { get; set; }
     public required string Description { get; set; }
-    public required string Genre { get; set; }
     public string? CoverFile { get; set; }
+    // public string? CoverFilePublicId { get; set; } 
     public string? NameFile { get; set; }
+    public string? NameFilePublicId { get; set; } 
     public SeriesStatus Status { get; set; }
     
     public Guid CreatedById  { get; set; }
@@ -25,7 +26,7 @@ public class Series: BaseEntity<Guid>, IAuditableEntity
     public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
     public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     public ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
-    
+    public ICollection<CategorySeries> CategorySeries { get; set; } = new List<CategorySeries>();
     
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
