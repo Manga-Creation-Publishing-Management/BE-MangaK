@@ -1,4 +1,4 @@
-﻿using Manga.Service.Auth;
+﻿using Manga.Service.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
