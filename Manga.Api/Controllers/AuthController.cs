@@ -27,4 +27,11 @@ public class AuthController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request)
+    {
+        var result = await _identityService.Register(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
+    }
 }

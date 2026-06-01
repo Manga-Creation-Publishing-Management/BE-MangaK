@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Manga.Repository.Data;
+using Manga.Repository.Entity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Manga.Service.Auth;
@@ -50,10 +51,50 @@ public class Service : IService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Role = user.Role.ToString(),
-            Phone =  user.Phone,
+            // Phone =  user.Phone,
             AccessToken = accessToken
             // RefreshToken = refreshToken,
         };
     }
 
+    public async Task<Response.RegistrationResponse> Register(Request.RegisterRequest request)
+    {
+        var emailExist = await _dbContext.Users.AnyAsync(u => u.Email == request.Email);
+        if (emailExist)
+        {
+            throw new ArgumentException("Email already exists");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            throw new ArgumentException("Password is required");
+        }
+
+        if (request.Password.Length < 6)
+        {
+            throw new ArgumentException("Password is too short.");
+        }
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            FirstName = request.FirstName,
+            LastName =  request.LastName,
+            Email =  request.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Phone =  request.Phone ?? "",
+            Role = request.Role,
+            Status = request.Status,
+            CreatedAt =  DateTime.UtcNow
+        };
+        _dbContext.Add(user);
+        await _dbContext.SaveChangesAsync();
+        return new Response.RegistrationResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role.ToString()
+        };
+    }
 }

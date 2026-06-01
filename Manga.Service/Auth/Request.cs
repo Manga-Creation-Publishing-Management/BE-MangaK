@@ -1,4 +1,7 @@
-﻿namespace Manga.Service.Auth;
+﻿using Manga.Repository.Entity.Enums;
+using Microsoft.AspNetCore.Http;
+
+namespace Manga.Service.Auth;
 
 public class Request
 {
@@ -6,6 +9,19 @@ public class Request
     {
         public required string Email { get; set; }
         public required string Password { get; set; }
+    }
+
+    public class RegisterRequest
+    {
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
+        public string? Phone { get; set; }
+        
+        public UserRole Role { get; set; }
+        public UserStatus Status { get; set; }
+    
     }
     
 }
