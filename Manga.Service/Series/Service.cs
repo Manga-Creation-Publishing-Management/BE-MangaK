@@ -156,6 +156,7 @@ public class Service: IService
             Categories   = series.CategorySeries.Select(cs => cs.Category.Name).ToList(),
             CoverFile = series.CoverFile,
             NameFile = series.NameFile,
+            Status   = series.Status,
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,
             CreateAt = series.CreatedAt,
             Chapters =  chapters
