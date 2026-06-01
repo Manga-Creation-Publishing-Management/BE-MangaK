@@ -43,4 +43,9 @@ public class Service : IService
         };
         return result;
     }
+
+    public Task<Response.IdentityResponse> Register(Request request)
+    {
+        throw new NotImplementedException();
+    }
 }
