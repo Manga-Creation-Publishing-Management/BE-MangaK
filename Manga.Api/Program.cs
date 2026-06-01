@@ -1,3 +1,4 @@
+using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
@@ -28,8 +29,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
-// builder.Services.AddJwtServices(builder.Configuration);
-// builder.Services.AddSwaggerServices();
+builder.Services.AddJwtServices(builder.Configuration);
+builder.Services.AddSwaggerServices();
 
 builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
 builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
