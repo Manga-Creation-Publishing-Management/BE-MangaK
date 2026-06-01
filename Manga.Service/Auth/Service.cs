@@ -46,9 +46,9 @@ public class Service : IService
         {
             UserId = user.Id,
             Email =  user.Email,
-            FullName = $"{user.FirstName} {user.LastName}",
+            FirstName = user.FirstName,
+            LastName = user.LastName,
             Role = user.Role.ToString(),
-            Phone =  user.Phone,
             AccessToken = accessToken
             // RefreshToken = refreshToken,
         };
