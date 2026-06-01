@@ -2,32 +2,35 @@
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Manga.Service.Identity;
+namespace Manga.Service.Auth;
 
 public class Service : IService
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext _dbContext;
     private readonly JwtService.IService _jwtService;
 
-
-    public Service(AppDbContext db, JwtService.IService jwtService)
+    public Service(AppDbContext dbContext, JwtService.IService jwtService)
     {
-        _db = db;
+        _dbContext = dbContext;
         _jwtService = jwtService;
     }
 
-    public async Task<Response.IdentityResponse> Login(Request request)
+    public async Task<Response.AuthResponse> Login(Request.LoginRequest request)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
         {
-            throw new Exception("Invalid email");
+            throw new UnauthorizedAccessException("Invalid email or password");
         }
 
-        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.PasswordHash, user.PasswordHash);
-        if (isPasswordValid == false)
+        if (!user.Verified)// dòng này kiểm tra xem user này đã xác thực email chưa kiểu dữ liệu là bool
+            throw new InvalidOperationException("Account is not verified.");
+        
+        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+        
+        if (!isPasswordValid)
         {
-            throw new Exception("Invalid password");
+            throw new UnauthorizedAccessException("Invalid email or password");
         }
 
         var claim = new List<Claim>
@@ -36,11 +39,18 @@ public class Service : IService
             new Claim("Email", user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
-        var token = _jwtService.GenerateAccessToken(claim);
-        var result = new Response.IdentityResponse
+        
+        var accessToken = _jwtService.GenerateAccessToken(claim);
+        
+        return new Response.AuthResponse()
         {
-            AccessToken = token
+            UserId = user.Id,
+            Email =  user.Email,
+            FullName = $"{user.FirstName} {user.LastName}",
+            Role = user.Role.ToString(),
+            Phone =  user.Phone,
+            AccessToken = accessToken
+            // RefreshToken = refreshToken,
         };
-        return result;
     }
 }

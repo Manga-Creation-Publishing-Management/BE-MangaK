@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260529151156_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260601034845_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
