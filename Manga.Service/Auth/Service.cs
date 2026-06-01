@@ -2,7 +2,7 @@
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Manga.Service.Identity;
+namespace Manga.Service.Auth;
 
 public class Service : IService
 {

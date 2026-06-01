@@ -1,4 +1,4 @@
-﻿namespace Manga.Service.Identity;
+﻿namespace Manga.Service.Auth;
 
 public class Response
 {
