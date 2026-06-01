@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Manga.Service.CloudinaryService;
 
@@ -8,3 +8,5 @@ public record CloudinaryOptions
     [Required]public string ApiKey { get; set; } = string.Empty;
     [Required]public string ApiSecret { get; set; } =  string.Empty;
 }
+
+
