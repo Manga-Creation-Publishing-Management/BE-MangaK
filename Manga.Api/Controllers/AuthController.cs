@@ -1,4 +1,5 @@
-﻿using Manga.Service.Identity;
+﻿using Manga.Service.Auth;
+using Manga.Service.Model;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
@@ -13,12 +14,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] Request request)
+    public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
         try
         {
             var result = await _identityService.Login(request);
-            return Ok(result);
+            return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
 
         }
         catch (Exception e)
