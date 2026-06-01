@@ -27,7 +27,6 @@ public class Series: BaseEntity<Guid>, IAuditableEntity
     public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     public ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
     public ICollection<CategorySeries> CategorySeries { get; set; } = new List<CategorySeries>();
-    
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }
