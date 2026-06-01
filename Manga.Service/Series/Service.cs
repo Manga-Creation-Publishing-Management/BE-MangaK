@@ -137,7 +137,7 @@ public class Service: IService
         if (series == null)
             throw new KeyNotFoundException("Series not found");
 
-        var chapters = series.Chapters.OrderByDescending(c => c.ChapterNumber)
+        var chapters = series.Chapters.OrderBy(c => c.ChapterNumber)
             .Select(c => new Response.ChapterSummary()
             {
                 ChapterId = c.Id,

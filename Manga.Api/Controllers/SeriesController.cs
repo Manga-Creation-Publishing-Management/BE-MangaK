@@ -8,7 +8,7 @@ namespace Manga.Api.Controllers;
 [Route("api/[controller]")]
 public class SeriesController: ControllerBase
 {
-   public readonly IService _seriesService;
+   private readonly IService _seriesService;
 
    public SeriesController(IService seriesService)
    {
