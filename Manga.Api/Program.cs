@@ -1,6 +1,14 @@
+using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
+
+using CloudinaryService = Manga.Service.CloudinaryService;
+using MediaService = Manga.Service.MediaService;
+using ChapterService = Manga.Service.Chapter;
+using SeriesService = Manga.Service.Series;
+using JwtService = Manga.Service.JwtService;
+using AuthService = Manga.Service.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,15 +20,32 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
+builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
+builder.Services.AddJwtServices(builder.Configuration);
+builder.Services.AddSwaggerServices();
 
+builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
+builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
+// ─── SeedData ────────────────────────────────────────────────────────────────
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    await AppDbContextSeed.SeedAsync(db);
+}
 
 
 // Configure the HTTP request pipeline.

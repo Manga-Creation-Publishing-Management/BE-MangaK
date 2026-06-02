@@ -1,4 +1,5 @@
-﻿using Manga.Repository.Abtraction;
+﻿using System.ComponentModel.DataAnnotations;
+using Manga.Repository.Abtraction;
 using Manga.Repository.Entity.Enums;
 
 namespace Manga.Repository.Entity;
