@@ -22,6 +22,9 @@ public class AppDbContext : DbContext
     public DbSet<PublishingSchedule> PublishingSchedules { get; set; }
     public DbSet<UserSession> UserSessions { get; set; }
 
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<CategorySeries> CategorySeries { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(builder =>
@@ -42,23 +45,15 @@ public class AppDbContext : DbContext
             builder.Property(u => u.Verified).IsRequired().HasDefaultValue(false);
             builder.Property(u => u.VerifiedCode).HasMaxLength(20);
             builder.Property(u => u.ResetPasswordCode).HasMaxLength(50);
-
-            builder.HasMany(u => u.CreatedSeries).WithOne(s => s.CreatedBy).HasForeignKey(s => s.CreatedById)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.ApprovedSeries).WithOne(s => s.ApprovedBy).HasForeignKey(s => s.ApprovedById)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.CreatedTasks).WithOne(t => t.CreatedBy).HasForeignKey(t => t.CreatedById)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.AssignedTasks).WithOne(t => t.AssignedTo).HasForeignKey(t => t.AssignedToId)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne(u => u.DecidedSchedule).WithOne(p => p.DecidedBy)
-                .HasForeignKey<PublishingSchedule>(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.CreatedSeries).WithOne(s => s.CreatedBy).HasForeignKey(s => s.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.ApprovedSeries).WithOne(s => s.ApprovedBy).HasForeignKey(s => s.ApprovedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.CreatedTasks).WithOne(t => t.CreatedBy).HasForeignKey(t => t.CreatedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.AssignedTasks).WithOne(t => t.AssignedTo).HasForeignKey(t => t.AssignedToId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(u => u.DecidedSchedule).WithOne(p => p.DecidedBy).HasForeignKey<PublishingSchedule>(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<UserSession>(builder =>
@@ -81,20 +76,14 @@ public class AppDbContext : DbContext
         {
             builder.Property(s => s.Title).IsRequired().HasMaxLength(255);
             builder.Property(s => s.Description).IsRequired().HasMaxLength(3000);
-            builder.Property(s => s.Genre).IsRequired().HasMaxLength(100);
             builder.Property(s => s.CoverFile).HasMaxLength(500);
             builder.Property(s => s.NameFile).HasMaxLength(255);
-            builder.Property(s => s.Status).IsRequired().HasConversion<string>().HasMaxLength(50)
-                .HasDefaultValue(SeriesStatus.Processing);
-
-            builder.HasMany(s => s.Chapters).WithOne(c => c.Series).HasForeignKey(c => c.SeriesId)
-                .OnDelete(DeleteBehavior.Cascade);
-            builder.HasMany(s => s.Feedbacks).WithOne(f => f.Series).HasForeignKey(f => f.SeriesId)
-                .OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(s => s.Leaderboards).WithOne(l => l.Series).HasForeignKey(l => l.SeriesId)
-                .OnDelete(DeleteBehavior.Cascade);
-            builder.HasOne(s => s.PublishingSchedule).WithOne(p => p.Series)
-                .HasForeignKey<PublishingSchedule>(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            builder.Property(s => s.NameFilePublicId).HasMaxLength(500);
+            builder.Property(s => s.Status).IsRequired().HasConversion<string>().HasMaxLength(50).HasDefaultValue(SeriesStatus.Processing);            
+            builder.HasMany(s => s.Chapters).WithOne(c => c.Series).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(s => s.Feedbacks).WithOne(f => f.Series).HasForeignKey(f => f.SeriesId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(s => s.Leaderboards).WithOne(l => l.Series).HasForeignKey(l => l.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(s => s.PublishingSchedule).WithOne(p => p.Series).HasForeignKey<PublishingSchedule>(p => p.SeriesId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Chapter>(builder =>
@@ -167,6 +156,18 @@ public class AppDbContext : DbContext
 
             builder.HasIndex(p => p.SeriesId).IsUnique();
             builder.HasIndex(p => p.DecidedById).IsUnique();
+        });
+        
+        modelBuilder.Entity<CategorySeries>(builder =>
+        {
+            builder.HasKey(cs => new { cs.CategoryId, cs.SeriesId });
+            builder.HasOne(cs => cs.Category).WithMany(c => c.CategorySeries).HasForeignKey(cs => cs.CategoryId).OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(cs => cs.Series).WithMany(s => s.CategorySeries).HasForeignKey(cs => cs.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<Category>(builder =>
+        {
+            builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
         });
     }
 }

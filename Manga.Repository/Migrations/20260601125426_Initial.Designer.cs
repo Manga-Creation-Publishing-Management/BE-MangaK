@@ -3,6 +3,7 @@ using System;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601125426_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +24,6 @@ namespace Manga.Repository.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
 
             modelBuilder.Entity("Manga.Repository.Entity.Category", b =>
                 {
@@ -415,7 +417,6 @@ namespace Manga.Repository.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-
                     b.Property<string>("NameFilePublicId")
                         .HasColumnType("text");
 
@@ -534,52 +535,6 @@ namespace Manga.Repository.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Manga.Repository.Entity.UserSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeviceFingerprint")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsRevoked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RefreshToken")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserSessions");
-                    });
-
             modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
                 {
                     b.HasOne("Manga.Repository.Entity.Category", "Category")
@@ -597,7 +552,6 @@ namespace Manga.Repository.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Series");
-
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Chapter", b =>
@@ -761,17 +715,6 @@ namespace Manga.Repository.Migrations
                     b.Navigation("ReviewedBy");
                 });
 
-
-            modelBuilder.Entity("Manga.Repository.Entity.UserSession", b =>
-                {
-                    b.HasOne("Manga.Repository.Entity.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-});
             modelBuilder.Entity("Manga.Repository.Entity.Category", b =>
                 {
                     b.Navigation("CategorySeries");
@@ -795,7 +738,6 @@ namespace Manga.Repository.Migrations
 
             modelBuilder.Entity("Manga.Repository.Entity.Series", b =>
                 {
-
                     b.Navigation("CategorySeries");
 
                     b.Navigation("Chapters");

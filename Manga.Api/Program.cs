@@ -3,6 +3,10 @@ using Manga.Middlewares;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
+using CloudinaryService = Manga.Service.CloudinaryService;
+using MediaService = Manga.Service.MediaService;
+using ChapterService = Manga.Service.Chapter;
+using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 
@@ -20,6 +24,12 @@ builder.Services.AddHttpContextAccessor();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
+builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
+builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(

@@ -6,7 +6,7 @@ namespace Manga.Repository.Entity;
 public class MangaTask: BaseEntity<Guid>, IAuditableEntity
 {
     public required string TaskTitle { get; set; }
-    public required string TaskDescription { get; set; }
+    public string? TaskDescription { get; set; }
     public string? submittedFileUrl  { get; set; }
     public MangaTaskStatus Status { get; set; }
     public DateTimeOffset? Deadline { get; set; }

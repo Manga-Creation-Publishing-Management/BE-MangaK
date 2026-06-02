@@ -9,22 +9,22 @@ namespace Manga.Service.JwtService;
 
 public class Service : IService
 {
-    private readonly JwtOptions _jwtOption = new();
 
+    private readonly JwtOptions _jwtOptions = new();
     public Service(IConfiguration configuration)
     {
-        configuration.GetSection("JwtOptions").Bind(_jwtOption);
+        configuration.GetSection("JwtOptions").Bind(_jwtOptions);
     }
 
     public string GenerateAccessToken(IEnumerable<Claim> claims)
     {
-        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOption.SecretKey));
+        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey));
         var signingCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
         var tokenOptions = new JwtSecurityToken(
-            issuer: _jwtOption.Issuer,
-            audience: _jwtOption.Audience,
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(_jwtOption.Expiration),
+            expires: DateTime.Now.AddMinutes(_jwtOptions.Expiration),
             signingCredentials: signingCredentials);
         var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
         return tokenString;
