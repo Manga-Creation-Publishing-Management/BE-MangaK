@@ -19,4 +19,11 @@ public class AuthController : ControllerBase
             var result = await _identityService.Login(request);
             return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request)
+    {
+        var result = await _identityService.Register(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
+    }
 }

@@ -17,9 +17,11 @@ public static class JwtExtensions
 
     public static void AddJwtServices(this IServiceCollection services, IConfiguration configuration)
     {
+
         JwtOptions jwtOptions = new JwtOptions();
         configuration.GetSection(nameof(JwtOptions)).Bind(jwtOptions);
         var key = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
+
 
         services.AddAuthentication(options =>
             {
