@@ -21,6 +21,7 @@ public class Service: IService
 
     public async Task<Response.CreateChapterResponse> CreateChapter(Guid seriesId, Request.CreateChapterRequest request)
     {
+        // check user
         var userId = _httpContextAccessor.HttpContext!.User.Claims
             .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
         
