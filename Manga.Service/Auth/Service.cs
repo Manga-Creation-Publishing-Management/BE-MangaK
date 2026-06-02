@@ -16,7 +16,7 @@ public class Service : IService
         _jwtService = jwtService;
     }
 
-    public async Task<Response.AuthResponse> Login(Request.LoginRequest request)
+    public async Task<Response.LoginResponse> Login(Request.LoginRequest request)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
@@ -42,8 +42,23 @@ public class Service : IService
         };
         
         var accessToken = _jwtService.GenerateAccessToken(claim);
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        var session = new UserSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            User = user,
+            DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
+            RefreshToken = refreshToken,
+            ExpiresAt =  DateTime.UtcNow.AddDays(7),
+            IsRevoked = false,
+            CreatedAt =  DateTime.UtcNow
+        };
+        _dbContext.Add(session);
+        await _dbContext.SaveChangesAsync();
         
-        return new Response.AuthResponse()
+        return new Response.LoginResponse()
         {
             UserId = user.Id,
             Email =  user.Email,
@@ -52,8 +67,8 @@ public class Service : IService
             LastName = user.LastName,
             Role = user.Role.ToString(),
             // Phone =  user.Phone,
-            AccessToken = accessToken
-            // RefreshToken = refreshToken,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
         };
     }
 
@@ -83,6 +98,7 @@ public class Service : IService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone =  request.Phone ?? "",
             Role = request.Role,
+            Verified = true,
             Status = request.Status,
             CreatedAt =  DateTime.UtcNow
         };
@@ -96,5 +112,20 @@ public class Service : IService
             LastName = user.LastName,
             Role = user.Role.ToString()
         };
+    }
+
+    public Task<Response.RefreshTokenResponse> RefreshToken(Request.RefreshTokenRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Response.ForgotPasswordResponse> ForgotPassword(Request.ForgotPasswordRequest request)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Response.ChangePasswordResponse> ChangePassword(Request.ChangePasswordRequest request)
+    {
+        throw new NotImplementedException();
     }
 }
