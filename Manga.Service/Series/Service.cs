@@ -190,4 +190,105 @@ public class Service: IService
             CreateAt = s.CreatedAt
         }).ToList();
     }
+
+    public async Task<Response.ReviewSeriesResponse> ReviewSeriesByTantouEditor(Guid seriesId, Request.ReviewSeriesRequest request)
+    {
+        var user = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(u => u.Type == "userId" || u.Type == "UserId")?.Value;
+        
+        if(String.IsNullOrEmpty(user))
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(user!);
+        
+        var editor = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        
+        if(editor == null)
+            throw new UnauthorizedAccessException("User not found");
+        
+        if(editor.Role != UserRole.TantouEditor)
+            throw new UnauthorizedAccessException("Only TantouEditor can review review series");
+        
+        var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
+        
+        if(series == null)
+            throw new KeyNotFoundException("Series not found");
+        
+        if(series.Status != SeriesStatus.Processing)
+            throw new UnauthorizedAccessException($"Series must be in processing status. Current status is: {series.Status}");
+
+
+        if (request.IsApproved)
+        {
+            series.Status = SeriesStatus.PendingBoard;
+            series.ReviewedById = userIdGuid;
+        }
+        else
+        {
+            series.Status = SeriesStatus.Rejected;
+        }
+        
+        await _dbContext.SaveChangesAsync();
+
+        return new Response.ReviewSeriesResponse()
+        {
+            SeriesId = series.Id,
+            Title = series.Title,
+            Status = series.Status,
+            Note = request.Note,
+            ReviewerName = $"{editor.FirstName} {editor.LastName}",
+            ReviewerRole = editor.Role.ToString(),
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    public async Task<Response.ReviewSeriesResponse> ApprovedSeriesByEditorialBoard(Guid seriesId, Request.ReviewSeriesRequest request)
+    {
+        var user = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(u => u.Type == "userId" || u.Type == "UserId")?.Value;
+        
+        if(String.IsNullOrEmpty(user))
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(user!);
+        
+        var board = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        
+        if(board == null)
+            throw new UnauthorizedAccessException("User not found");
+        
+        if(board.Role != UserRole.EditorialBoard)
+            throw new UnauthorizedAccessException("Only EditorialBoard can review review series");
+        
+        var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
+        
+        if(series == null)
+            throw new KeyNotFoundException("Series not found");
+        
+        if(series.Status != SeriesStatus.PendingBoard)
+            throw new UnauthorizedAccessException($"Series must be reviewed by TantouEditor first. Current status: {series.Status}");
+
+        if (request.IsApproved)
+        {
+            series.Status = SeriesStatus.Approved;
+            series.ApprovedById = userIdGuid;
+        }
+        else
+        {
+            series.Status = SeriesStatus.Rejected;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        
+        return new Response.ReviewSeriesResponse
+        {
+            SeriesId     = series.Id,
+            Title        = series.Title,
+            Status       = series.Status,
+            Note         = request.Note,
+            ReviewerName = $"{board.FirstName} {board.LastName}",
+            ReviewerRole = nameof(UserRole.EditorialBoard),
+            UpdatedAt    = DateTimeOffset.UtcNow
+        };
+    }
 }
