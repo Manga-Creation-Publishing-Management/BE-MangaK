@@ -482,3 +482,10 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# VS Code local settings
+.vscode/
+
+# App settings contain secrets
+**/appsettings.json
+**/appsettings.Development.json
