@@ -241,7 +241,7 @@ public class Service : IService
 
     private static string BuildVerificationEmailBody(string fullName, int verifiedCode) => $"""
          <!DOCTYPE html>
-         <html lang="vi">
+         <html lang="en">
          <head>
              <meta charset="UTF-8" />
              <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -251,7 +251,7 @@ public class Service : IService
          <body style="
              margin:0;
              padding:0;
-             background:#f0e6ff;
+             background:#F4F0FA;
              font-family:Arial,Helvetica,sans-serif;
          ">
 
@@ -265,28 +265,41 @@ public class Service : IService
                          background:#ffffff;
                          border-radius:28px;
                          overflow:hidden;
-                         box-shadow:0 12px 40px rgba(186,104,200,0.15);
+                         box-shadow:0 12px 40px rgba(142, 68, 173, 0.1);
                     ">
 
                  <!-- HEADER -->
                  <tr>
                      <td style="
-                         background:linear-gradient(135deg, #E6E0F8 0%, #E1D6E2 60%, #B8A8E6 100%);
-                         padding:30px 32px;
+                         background:linear-gradient(135deg, #E8E5F7 0%, #F5EFFB 100%);
+                         padding:40px 32px;
                          text-align:center;
                          position:relative;
                      ">
 
-                         <!-- Floating Circle -->
-                         <div style=" width:300px; height:72px; margin:0 auto 0px; border-radius:20px; background:rgba(255, 183, 104, 0.25); line-height:72px; text-align:center; font-size:28px; font-weight:800; color:rgb(255, 255, 255); border:1px solid rgba(255,255,255,0.2); "> Mangaka </div>
+                         <!-- Brand Header -->
+                         <div style=" 
+                            width:280px; 
+                            height:64px; 
+                            margin:0 auto; 
+                            border-radius:20px; 
+                            background:#FFF2E6; 
+                            line-height:64px; 
+                            text-align:center; 
+                            font-size:26px; 
+                            font-weight:800; 
+                            color:#FF9F43; 
+                            border:1px solid #FFE0C2;
+                         ">Mangaka</div>
 
                          <p style="
                              margin:16px 0 0;
-                             color:#b0a0e0;
-                             font-size:16px;
-                             line-height:1.7;
+                             color:#9B8BB4;
+                             font-size:15px;
+                             font-weight: 500;
+                             letter-spacing: 0.5px;
                          ">
-                             Thế giới truyện tranh trong tầm tay bạn
+                             Your ultimate manga universe at your fingertips
                          </p>
 
                      </td>
@@ -294,44 +307,43 @@ public class Service : IService
 
                  <!-- BODY -->
                  <tr>
-                     <td style="padding:50px 40px; color:#311b92;">
+                     <td style="padding:40px 40px 30px; color:#4A3F60;">
 
                          <p style="
                              margin:0 0 18px;
-                             font-size:26px;
+                             font-size:24px;
                              font-weight:700;
-                             color:#1a0033;
+                             color:#2D253B;
                          ">
-                             Xin chào <strong style="color:#b39ddb;">{fullName}</strong>,
+                             Hi <strong style="color:#FF9F43;">{fullName}</strong>,
                          </p>
 
                          <p style="
-                             margin:0 0 18px;
-                             font-size:16px;
-                             line-height:1.9;
-                             color:#5e35b1;
+                             margin:0 0 14px;
+                             font-size:15px;
+                             line-height:1.7;
+                             color:#6C5E85;
                          ">
-                             Cảm ơn bạn đã đăng ký tài khoản tại
-                             <strong style="color:#b39ddb;">Mangaka</strong>.
+                             Thank you for registering an account with <strong style="color:#9B5DE5;">Mangaka</strong>.
                          </p>
 
                          <p style="
-                             margin:0 0 36px;
-                             font-size:16px;
-                             line-height:1.9;
-                             color:#5e35b1;
+                             margin:0 0 30px;
+                             font-size:15px;
+                             line-height:1.7;
+                             color:#6C5E85;
                          ">
-                             Vui lòng sử dụng mã xác thực bên dưới để hoàn tất quá trình xác thực tài khoản của bạn.
+                             Please use the verification code below to complete your account setup.
                          </p>
 
                          <!-- OTP CARD -->
                          <div style="
-                             background:linear-gradient(135deg, #ffd180 0%, #b39ddb 100%);
+                             background:linear-gradient(135deg, #F3EAFE 0%, #FFF0E0 100%);
                              border-radius:24px;
-                             padding:40px 20px;
+                             padding:36px 20px;
                              text-align:center;
-                             margin:40px 0;
-                             box-shadow:0 12px 30px rgba(255,183,104,0.25);
+                             margin:30px 0;
+                             border: 1px solid #EBE2F7;
                              position:relative;
                              overflow:hidden;
                          ">
@@ -341,7 +353,7 @@ public class Service : IService
                                  position:absolute;
                                  width:200px;
                                  height:200px;
-                                 background:rgba(230, 224, 248, 0.1);
+                                 background:rgba(255,255,255,0.6);
                                  border-radius:50%;
                                  top:-80px;
                                  right:-60px;
@@ -349,26 +361,28 @@ public class Service : IService
 
                              <p style="
                                  margin:0 0 16px;
-                                 color:#ffffff;
-                                 font-size:14px;
+                                 color:#9B8BB4;
+                                 font-size:13px;
+                                 font-weight:700;
                                  letter-spacing:2px;
                                  text-transform:uppercase;
                              ">
-                                 MÃ XÁC THỰC (OTP)
+                                 Verification Code
                              </p>
 
                              <div style="
                                  display:inline-block;
                                  background:#ffffff;
-                                 padding:18px 34px;
-                                 border-radius:18px;
-                                 box-shadow:0 8px 24px rgba(0,0,0,0.15);
+                                 padding:16px 36px;
+                                 border-radius:16px;
+                                 box-shadow:0 6px 20px rgba(155, 93, 229, 0.08);
+                                 border: 1px solid #F0E6FD;
                              ">
                                  <span style="
                                      font-size:36px;
                                      font-weight:800;
-                                     letter-spacing:12px;
-                                     color:#ffb74d;
+                                     letter-spacing:10px;
+                                     color:#FF9F43;
                                  ">
                                      {verifiedCode}
                                  </span>
@@ -376,51 +390,50 @@ public class Service : IService
 
                              <p style="
                                  margin:18px 0 0;
-                                 color:#ffffff;
+                                 color:#A192BD;
                                  font-size:13px;
                              ">
-                                 Mã có hiệu lực trong 5 phút
+                                 This code is valid for 5 minutes
                              </p>
 
                          </div>
 
                          <!-- BUTTON -->
-                         <div style="text-align:center; margin:42px 0;">
+                         <div style="text-align:center; margin:36px 0;">
 
                              <a href="#"
                                 style="
                                      display:inline-block;
-                                     background:#b39ddb;
+                                     background:#9B5DE5;
                                      color:#ffffff;
                                      text-decoration:none;
-                                     padding:16px 34px;
+                                     padding:16px 36px;
                                      border-radius:16px;
                                      font-size:15px;
                                      font-weight:700;
-                                     box-shadow:0 10px 24px rgba(179,157,219,0.35);
+                                     box-shadow:0 8px 20px rgba(155, 93, 229, 0.25);
                                 ">
-                                 Xác thực tài khoản
+                                 Verify Account
                              </a>
 
                          </div>
 
                          <!-- INFO BOX -->
                          <div style="
-                             background:#f8f0ff;
-                             border:1px solid #e1bee7;
-                             border-left:5px solid #ffb74d;
-                             border-radius:16px;
-                             padding:18px 20px;
+                             background:#FAF8FD;
+                             border:1px solid #EFEAF7;
+                             border-left:4px solid #FF9F43;
+                             border-radius:14px;
+                             padding:16px 20px;
                          ">
 
                              <p style="
                                  margin:0;
-                                 color:#7e57c2;
-                                 font-size:14px;
-                                 line-height:1.8;
+                                 color:#8C7E9F;
+                                 font-size:13px;
+                                 line-height:1.7;
                              ">
-                                 Nếu bạn không yêu cầu tạo tài khoản,
-                                 hãy bỏ qua email này để đảm bảo an toàn.
+                                 If you did not request this creation, please ignore this email. Your account remains secure.
                              </p>
 
                          </div>
@@ -431,31 +444,32 @@ public class Service : IService
                  <!-- FOOTER -->
                  <tr>
                      <td style="
-                         background:#7e57c2;
-                         padding:34px 24px;
+                         background:#FAF8FD;
+                         padding:30px 24px;
                          text-align:center;
+                         border-top: 1px solid #EFEAF7;
                      ">
 
                          <h3 style="
-                             margin:0 0 10px;
-                             color:#ffb74d;
-                             font-size:20px;
+                             margin:0 0 8px;
+                             color:#2D253B;
+                             font-size:18px;
                          ">
                              Mangaka
                          </h3>
 
                          <p style="
                              margin:0 0 16px;
-                             color:#ffffff;
-                             font-size:14px;
-                             line-height:1.7;
+                             color:#8C7E9F;
+                             font-size:13px;
+                             line-height:1.6;
                          ">
-                             Nền tảng đọc truyện tranh trực tuyến hàng đầu.
+                             The leading online platform for manga enthusiasts.
                          </p>
 
                          <p style="
                              margin:0;
-                             color:#e6e0f8;
+                             color:#B2A7C4;
                              font-size:12px;
                          ">
                              © 2026 Mangaka. All rights reserved.
