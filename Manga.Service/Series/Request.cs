@@ -12,4 +12,10 @@ public class Request
         public IFormFile? CoverFile { get; set; }
         public IFormFile? NameFile { get; set; }
     }
+    
+    public class ReviewSeriesRequest
+    {
+        public required bool IsApproved { get; set; }
+        public string? Note { get; set; }
+    }
 }

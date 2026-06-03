@@ -38,4 +38,27 @@ public class SeriesController: ControllerBase
        var result = await _seriesService.GetSeriesDetails(seriesId);
        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Series Detail Successfully", HttpContext.TraceIdentifier));
    }
+   
+   [HttpGet("get-series-by-title")]
+   public async Task<IActionResult> GetSeriesByTitle([FromQuery] string title)
+   {
+       var result = await _seriesService.GetSeriesByTitle(title);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Get series by title successfully.", HttpContext.TraceIdentifier));
+   }
+  
+   [Authorize]
+   [HttpPatch("tantou-review/{seriesId}")]
+   public async Task<IActionResult> ReviewSeriesByTantouEditor(Guid seriesId,[FromBody] Request.ReviewSeriesRequest request)
+   {
+       var result = await _seriesService.ReviewSeriesByTantouEditor(seriesId, request);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Series reviewed by TantouEditor.", HttpContext.TraceIdentifier));
+   }
+   
+   [Authorize]
+   [HttpPatch("board-review/{seriesId}")]
+   public async Task<IActionResult> ApprovedSeriesByEditorialBoard(Guid seriesId, [FromBody] Request.ReviewSeriesRequest request)
+   {
+       var result = await _seriesService.ApprovedSeriesByEditorialBoard(seriesId, request);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Series reviewed by EditorialBoard.", HttpContext.TraceIdentifier));
+   }
 }
