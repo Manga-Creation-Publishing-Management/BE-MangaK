@@ -3,6 +3,7 @@ using System;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260602192105_AddUserSessionsTable")]
+    partial class AddUserSessionsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,7 +41,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
@@ -53,7 +56,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasIndex("SeriesId");
 
-                    b.ToTable("CategorySeries", (string)null);
+                    b.ToTable("CategorySeries");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Chapter", b =>
@@ -106,7 +109,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("SeriesId", "ChapterNumber")
                         .IsUnique();
 
-                    b.ToTable("Chapters", (string)null);
+                    b.ToTable("Chapters");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.ChapterVoting", b =>
@@ -150,7 +153,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("ReaderId", "ChapterId")
                         .IsUnique();
 
-                    b.ToTable("ChapterVotings", (string)null);
+                    b.ToTable("ChapterVotings");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Feedback", b =>
@@ -200,7 +203,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasIndex("SeriesId");
 
-                    b.ToTable("Feedbacks", (string)null);
+                    b.ToTable("Feedbacks");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Income", b =>
@@ -239,7 +242,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("MangaTaskId")
                         .IsUnique();
 
-                    b.ToTable("Incomes", (string)null);
+                    b.ToTable("Incomes");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Leaderboard", b =>
@@ -276,7 +279,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("SeriesId", "RankingPeriod")
                         .IsUnique();
 
-                    b.ToTable("Leaderboards", (string)null);
+                    b.ToTable("Leaderboards");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.MangaTask", b =>
@@ -341,7 +344,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasIndex("CreatedById");
 
-                    b.ToTable("MangaTasks", (string)null);
+                    b.ToTable("MangaTasks");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.PublishingSchedule", b =>
@@ -380,7 +383,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("SeriesId")
                         .IsUnique();
 
-                    b.ToTable("PublishingSchedules", (string)null);
+                    b.ToTable("PublishingSchedules");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Series", b =>
@@ -444,7 +447,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasIndex("ReviewedById");
 
-                    b.ToTable("Series", (string)null);
+                    b.ToTable("Series");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.User", b =>
@@ -530,7 +533,7 @@ namespace Manga.Repository.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.UserSession", b =>
@@ -576,7 +579,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserSessions", (string)null);
+                    b.ToTable("UserSessions");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
