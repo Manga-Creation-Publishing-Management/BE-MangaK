@@ -39,6 +39,22 @@ builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
+
+//AI
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") 
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); 
+    });
+});
+
+//AI
+
+
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -54,6 +70,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+//AI
+app.UseCors("AllowFrontend");
+//AI
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseAuthentication();
