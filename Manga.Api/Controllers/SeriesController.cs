@@ -1,4 +1,5 @@
-﻿using Manga.Service.Model;
+﻿using Manga.Api.extensions;
+using Manga.Service.Model;
 using Manga.Service.Series;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,7 @@ public class SeriesController: ControllerBase
       _seriesService = seriesService;
    }
    
-   [Authorize]
+   [Authorize(Policy = JwtExtensions.MangakaPolicy)]
    [HttpPost("create-series")]
    public async Task<IActionResult> CreateSeries([FromForm] Request.CreateSeriesRequest request)
    {
