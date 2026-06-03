@@ -1,3 +1,4 @@
+using MailKit;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
@@ -5,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
+using MailService = Manga.Service.MailService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,7 @@ builder.Services.AddSwaggerServices();
 
 builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
 builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
+builder.Services.AddScoped<MailService.IService, MailService.Service>();
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────

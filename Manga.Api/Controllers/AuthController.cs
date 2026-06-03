@@ -27,4 +27,18 @@ public class AuthController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] Request.ForgotPasswordRequest request)
+    {
+        var result = await _identityService.ForgotPassword(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Please check Mail", HttpContext.TraceIdentifier));
+    }
+
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] Request.ChangePasswordRequest request)
+    {
+        var result = await _identityService.ChangePassword(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Change password successfully", HttpContext.TraceIdentifier));
+    }
 }
