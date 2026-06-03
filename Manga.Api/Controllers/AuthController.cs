@@ -16,16 +16,34 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
-        try
-        {
             var result = await _identityService.Login(request);
             return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
+    }
 
-        }
-        catch (Exception e)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request)
+    {
+        var result = await _identityService.Register(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] Request.LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var isSuccess = await _identityService.Logout(request, cancellationToken);
+        if (!isSuccess)
         {
-            return BadRequest(e.Message);
+
+            return Ok(ApiResponseFactory.ErrorResponse( "Logout failed!", "The session does not exist, has expired, or has already been revoked.",
+                traceId: HttpContext.TraceIdentifier));
         }
+        return Ok(ApiResponseFactory.SuccessResponse(isSuccess, "Logout Successfully!", HttpContext.TraceIdentifier));
+    }
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] Request.RefreshTokenRequest request)
+    {
+        var result = await _identityService.RefreshToken(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Token refreshed", HttpContext.TraceIdentifier));
     }
 
     [HttpPost("forgot-password")]

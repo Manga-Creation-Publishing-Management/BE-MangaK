@@ -8,6 +8,12 @@ public static class AppDbContextSeed
 {
     public static async Task SeedAsync(AppDbContext dbContext)
     {
+        await SeedUsersAsync(dbContext);
+        await SeedCategoriesAsync(dbContext);
+    }
+
+    private static async Task SeedUsersAsync(AppDbContext dbContext)
+    {
         if (await dbContext.Users.AnyAsync())
             return;
 
@@ -109,6 +115,89 @@ public static class AppDbContextSeed
         };
 
         await dbContext.Users.AddRangeAsync(users);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private static async Task SeedCategoriesAsync(AppDbContext dbContext)
+    {
+        if (await dbContext.Categories.AnyAsync())
+            return;
+
+        var categories = new List<Category>
+        {
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Action"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Adventure"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Fantasy"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Romance"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Comedy"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Drama"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Horror"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mystery"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "School Life"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Slice of Life"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Sports"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Sci-Fi"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Supernatural"
+            },
+            new Category
+            {
+                Id = Guid.NewGuid(),
+                Name = "Historical"
+            }
+        };
+
+        await dbContext.Categories.AddRangeAsync(categories);
         await dbContext.SaveChangesAsync();
     }
 }

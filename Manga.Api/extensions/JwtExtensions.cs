@@ -17,9 +17,11 @@ public static class JwtExtensions
 
     public static void AddJwtServices(this IServiceCollection services, IConfiguration configuration)
     {
-        JwtOption jwtOption = new JwtOption();
-        configuration.GetSection(nameof(JwtOption)).Bind(jwtOption);
-        var key = Encoding.UTF8.GetBytes(jwtOption.SecretKey);
+
+        JwtOptions jwtOptions = new JwtOptions();
+        configuration.GetSection(nameof(JwtOptions)).Bind(jwtOptions);
+        var key = Encoding.UTF8.GetBytes(jwtOptions.SecretKey);
+
 
         services.AddAuthentication(options =>
             {
@@ -34,8 +36,8 @@ public static class JwtExtensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtOption.Issuer,
-                    ValidAudience = jwtOption.Audience,
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     NameClaimType = ClaimTypes.NameIdentifier,
                     RoleClaimType = ClaimTypes.Role
