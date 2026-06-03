@@ -486,6 +486,11 @@ $RECYCLE.BIN/
 # VS Code local settings
 .vscode/
 
+# Rider / JetBrains local settings
+.idea/
+*.sln.DotSettings.user
+
 # App settings contain secrets
 **/appsettings.json
 **/appsettings.Development.json
+
