@@ -26,4 +26,23 @@ public class AuthController : ControllerBase
         var result = await _identityService.Register(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
     }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] Request.LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var isSuccess = await _identityService.Logout(request, cancellationToken);
+        if (!isSuccess)
+        {
+
+            return Ok(ApiResponseFactory.ErrorResponse( "Logout failed!", "The session does not exist, has expired, or has already been revoked.",
+                traceId: HttpContext.TraceIdentifier));
+        }
+        return Ok(ApiResponseFactory.SuccessResponse(isSuccess, "Logout Successfully!", HttpContext.TraceIdentifier));
+    }
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] Request.RefreshTokenRequest request)
+    {
+        var result = await _identityService.RefreshToken(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Token refreshed", HttpContext.TraceIdentifier));
+    }
 }

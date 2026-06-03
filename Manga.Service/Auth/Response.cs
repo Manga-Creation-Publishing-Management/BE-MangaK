@@ -26,10 +26,11 @@ public class Response
         public string LastName { get; set; } = string.Empty;
         public string Role { get; set;} = string.Empty;
     }
-    public class RefreshTokenResponse
+    public class RegisterReaderResponse
     {
         
     }
+    
     public class ForgotPasswordResponse
     {
         

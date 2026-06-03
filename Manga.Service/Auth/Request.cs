@@ -25,19 +25,27 @@ public class Request
         public UserStatus Status { get; set; }
     }
 
+    public class RegisterReaderRequest
+    {
+        public required string Email { get; set; }
+    }
+
     public class RefreshTokenRequest
     {
         public required string RefreshToken { get; set; }
         public required string DeviceFingerprint { get; set; }
-        
     }
+
     public class ForgotPasswordRequest
     {
-        
     }
 
     public class ChangePasswordRequest
     {
-        
+    }
+
+    public class LogoutRequest
+    {
+        public required string refreshToken { get; set; }
     }
 }

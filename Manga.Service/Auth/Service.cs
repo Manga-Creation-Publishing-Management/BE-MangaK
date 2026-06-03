@@ -114,9 +114,63 @@ public class Service : IService
         };
     }
 
-    public Task<Response.RefreshTokenResponse> RefreshToken(Request.RefreshTokenRequest request)
+    public Task<Response.RegisterReaderResponse> RegisterReader(Request.RegisterReaderRequest request)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<Response.LoginResponse> RefreshToken(Request.RefreshTokenRequest request)
+    {
+        var session = await _dbContext.UserSessions.FirstOrDefaultAsync(x => x.RefreshToken == request.RefreshToken && !x.IsRevoked) 
+                      ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
+        if (session.ExpiresAt < DateTime.UtcNow)
+        {
+            session.IsRevoked = true;
+            await _dbContext.SaveChangesAsync();
+            throw new UnauthorizedAccessException("Your session has expired. Please log in again.");
+        }
+
+        if (request.DeviceFingerprint != session.DeviceFingerprint)
+        {
+            session.IsRevoked = true;
+            await _dbContext.SaveChangesAsync();
+            throw new UnauthorizedAccessException("Access denied. Your session is invalid or has expired.");
+        }
+        var user = session.User;
+        session.IsRevoked = true;
+        
+        var newRefreshToken = _jwtService.GenerateRefreshToken();
+        var newSession = new UserSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            User = user,
+            DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
+            RefreshToken = newRefreshToken,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            IsRevoked = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        _dbContext.UserSessions.AddAsync(newSession);
+        await _dbContext.SaveChangesAsync();
+        var claim = new List<Claim>
+        {
+            new Claim("UserId", user.Id.ToString()),
+            new Claim("Email", user.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
+        };
+        
+        var accessToken = _jwtService.GenerateAccessToken(claim);
+        return new Response.LoginResponse()
+        {
+            UserId = user.Id,
+            Email =  user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role.ToString(),
+            AccessToken = accessToken,
+            RefreshToken = newRefreshToken,   
+        };
     }
 
     public Task<Response.ForgotPasswordResponse> ForgotPassword(Request.ForgotPasswordRequest request)
@@ -128,4 +182,22 @@ public class Service : IService
     {
         throw new NotImplementedException();
     }
+
+    public async Task<bool> Logout(Request.LogoutRequest request, CancellationToken cancellationToken)
+    {
+        var session = await _dbContext.UserSessions.FirstOrDefaultAsync(x => 
+            x.RefreshToken == request.refreshToken && !x.IsRevoked  && !x.IsDeleted && x.ExpiresAt > DateTimeOffset.UtcNow, cancellationToken);
+
+        if (session == null)
+        {
+            return false; 
+        }
+        session.IsRevoked = true;
+        session.UpdatedAt = DateTimeOffset.UtcNow; 
+        await _dbContext.SaveChangesAsync(cancellationToken); 
+    
+        return true;
+    }
+
+
 }
