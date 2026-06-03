@@ -493,3 +493,4 @@ $RECYCLE.BIN/
 # App settings contain secrets
 **/appsettings.json
 **/appsettings.Development.json
+

@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -8,8 +9,8 @@ namespace Manga.Service.JwtService;
 
 public class Service : IService
 {
-    private readonly JwtOptions _jwtOptions = new();
 
+    private readonly JwtOptions _jwtOptions = new();
     public Service(IConfiguration configuration)
     {
         configuration.GetSection("JwtOptions").Bind(_jwtOptions);
@@ -27,6 +28,14 @@ public class Service : IService
             signingCredentials: signingCredentials);
         var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
         return tokenString;
+    }
+
+    public string GenerateRefreshToken()
+    {
+        var bytes =  new byte[64];
+        using var randomNumber = RandomNumberGenerator.Create();
+        randomNumber.GetBytes(bytes);
+        return Convert.ToBase64String(bytes);
     }
 
     public ClaimsPrincipal ValidateToken(string token)
