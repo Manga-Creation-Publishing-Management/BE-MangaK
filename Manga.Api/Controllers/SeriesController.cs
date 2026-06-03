@@ -35,4 +35,11 @@ public class SeriesController: ControllerBase
        var result = await _seriesService.GetSeriesDetails(seriesId);
        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Series Detail Successfully", HttpContext.TraceIdentifier));
    }
+   
+   [HttpGet("get-series-by-title")]
+   public async Task<IActionResult> GetSeriesByTitle([FromQuery] string title)
+   {
+       var result = await _seriesService.GetSeriesByTitle(title);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Get series by title successfully.", HttpContext.TraceIdentifier));
+   }
 }

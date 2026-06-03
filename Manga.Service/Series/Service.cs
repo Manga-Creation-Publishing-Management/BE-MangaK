@@ -163,4 +163,31 @@ public class Service: IService
         };
         
     }
+
+    public async Task<List<Response.GetAllSeriesResponse>> GetSeriesByTitle(string title)
+    {
+        var seriesList = await _dbContext.Series
+            .Where(s => !s.IsDeleted && s.Title.ToLower().Contains(title.ToLower()))
+            .Include(s => s.CreatedBy)
+            .Include(s => s.Chapters)
+            .Include(s => s.CategorySeries)
+            .ThenInclude(s => s.Category)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+        
+        if (!seriesList.Any())
+            throw new KeyNotFoundException($"No found series");
+
+        return seriesList.Select(s => new Response.GetAllSeriesResponse()
+        {
+            SeriesId = s.Id,
+            Title = s.Title,
+            Categories = s.CategorySeries.Select(cs => cs.Category.Name).ToList(),
+            CoverFile = s.CoverFile,
+            Status = s.Status,
+            MangakaName = s.CreatedBy.AuthorName ?? $"{s.CreatedBy.FirstName} {s.CreatedBy.LastName}",
+            TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
+            CreateAt = s.CreatedAt
+        }).ToList();
+    }
 }
