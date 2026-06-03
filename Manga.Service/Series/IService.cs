@@ -5,4 +5,8 @@ public interface IService
     Task<Response.CreateSeriesResponse> CreateSeries(Request.CreateSeriesRequest request);
     Task<List<Response.GetAllSeriesResponse>> GetAllSeries();
     Task<Response.GetSeriesDetailsResponse> GetSeriesDetails(Guid seriesId);
+    Task<List<Response.GetAllSeriesResponse>> GetSeriesByTitle(string title);
+    Task<Response.ReviewSeriesResponse> ReviewSeriesByTantouEditor(Guid seriesId, Request.ReviewSeriesRequest request);
+    Task<Response.ReviewSeriesResponse> ApprovedSeriesByEditorialBoard(Guid seriesId, Request.ReviewSeriesRequest request);
+    
 }

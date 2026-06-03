@@ -53,4 +53,16 @@ public class Response
        public ChapterStatus Status { get; set; }
        public DateTimeOffset CreatedAt { get; set; }
     }
+    
+    public class ReviewSeriesResponse
+    {
+        public Guid SeriesId { get; set; }
+        public required string Title { get; set; }
+        public SeriesStatus Status { get; set; }
+        public string? Note { get; set; }
+        public string ReviewerName { get; set; } = string.Empty;
+        public string ReviewerRole { get; set; } = string.Empty;
+        public DateTimeOffset UpdatedAt { get; set; }
+        
+    }
 }
