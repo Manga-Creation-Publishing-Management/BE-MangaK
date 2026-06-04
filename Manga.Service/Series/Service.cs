@@ -228,7 +228,7 @@ public class Service: IService
         {
             series.Status = SeriesStatus.Rejected;
         }
-        
+        series.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
 
         return new Response.ReviewSeriesResponse()
@@ -239,7 +239,7 @@ public class Service: IService
             Note = request.Note,
             ReviewerName = $"{editor.FirstName} {editor.LastName}",
             ReviewerRole = editor.Role.ToString(),
-            UpdatedAt = DateTimeOffset.UtcNow
+            UpdatedAt = series.UpdatedAt.Value
         };
     }
 
@@ -278,7 +278,7 @@ public class Service: IService
         {
             series.Status = SeriesStatus.Rejected;
         }
-
+        series.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
         
         return new Response.ReviewSeriesResponse
@@ -289,7 +289,7 @@ public class Service: IService
             Note         = request.Note,
             ReviewerName = $"{board.FirstName} {board.LastName}",
             ReviewerRole = nameof(UserRole.EditorialBoard),
-            UpdatedAt    = DateTimeOffset.UtcNow
+            UpdatedAt    = series.UpdatedAt.Value
         };
     }
 }

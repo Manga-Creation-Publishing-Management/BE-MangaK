@@ -125,10 +125,11 @@ public class Service : IService
 
     public async Task<Response.LoginResponse> RefreshToken(Request.RefreshTokenRequest request)
     {
-        var session =
-            await _dbContext.UserSessions.FirstOrDefaultAsync(x =>
-                x.RefreshToken == request.RefreshToken && !x.IsRevoked)
-            ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
+        var session = await _dbContext.UserSessions
+                          .Include(x => x.User)
+                          .FirstOrDefaultAsync(x =>
+                          x.RefreshToken == request.RefreshToken && !x.IsRevoked)
+                      ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
         if (session.ExpiresAt < DateTime.UtcNow)
         {
             session.IsRevoked = true;
