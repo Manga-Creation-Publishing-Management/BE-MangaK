@@ -24,6 +24,7 @@ public class Service: IService
         var userId = _httpContextAccessor.HttpContext!.User.Claims
             .FirstOrDefault(x => x.Type == "userId"|| x.Type == "UserId")?.Value;
         
+        
         if(string.IsNullOrEmpty(userId))
             throw new UnauthorizedAccessException("User is not login");
         
