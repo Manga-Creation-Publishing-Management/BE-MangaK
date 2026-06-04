@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Manga.Repository.Data;
 using Manga.Repository.Entity;
+using Manga.Repository.Entity.Enums;
 using Manga.Service.MailService;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,7 +76,7 @@ public class Service : IService
         };
     }
 
-    public async Task<Response.RegistrationResponse> Register(Request.RegisterRequest request)
+    public async Task<Response.RegistrationResponse> Register(Request.RegisterRequest request, UserRole role)
     {
         var emailExist = await _dbContext.Users.AnyAsync(u => u.Email == request.Email);
         if (emailExist)
@@ -101,7 +102,7 @@ public class Service : IService
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone = request.Phone ?? "",
-            Role = request.Role,
+            Role = role,
             Verified = true,
             Status = request.Status,
             CreatedAt = DateTime.UtcNow

@@ -68,7 +68,7 @@ public class Service:IService
         return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
     }
  
-    public async Task DeleteFileAsync(string publicId)
+    public async  Task DeleteFileAsync(string publicId)
     {
         var deleteParams = new DeletionParams(publicId)
         {

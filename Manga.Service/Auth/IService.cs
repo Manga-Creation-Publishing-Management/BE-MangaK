@@ -1,9 +1,11 @@
-﻿namespace Manga.Service.Auth;
+﻿using Manga.Repository.Entity.Enums;
+
+namespace Manga.Service.Auth;
 
 public interface IService
 {
     Task<Response.LoginResponse> Login(Request.LoginRequest request);
-    Task<Response.RegistrationResponse> Register(Request.RegisterRequest request);
+    Task<Response.RegistrationResponse> Register(Request.RegisterRequest request,UserRole role);
     Task<Auth.Response.RegisterReaderResponse> RegisterReader(Request.RegisterReaderRequest request);
     Task<Response.LoginResponse>  RefreshToken(Request.RefreshTokenRequest request);
     Task<String>  ForgotPassword(Request.ForgotPasswordRequest request);
