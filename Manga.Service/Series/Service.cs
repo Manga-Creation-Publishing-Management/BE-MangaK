@@ -228,7 +228,7 @@ public class Service: IService
         {
             series.Status = SeriesStatus.Rejected;
         }
-        
+        series.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
 
         return new Response.ReviewSeriesResponse()
@@ -239,7 +239,7 @@ public class Service: IService
             Note = request.Note,
             ReviewerName = $"{editor.FirstName} {editor.LastName}",
             ReviewerRole = editor.Role.ToString(),
-            UpdatedAt = DateTimeOffset.UtcNow
+            UpdatedAt = series.UpdatedAt.Value
         };
     }
 
@@ -278,7 +278,7 @@ public class Service: IService
         {
             series.Status = SeriesStatus.Rejected;
         }
-
+        series.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
         
         return new Response.ReviewSeriesResponse
@@ -289,7 +289,7 @@ public class Service: IService
             Note         = request.Note,
             ReviewerName = $"{board.FirstName} {board.LastName}",
             ReviewerRole = nameof(UserRole.EditorialBoard),
-            UpdatedAt    = DateTimeOffset.UtcNow
+            UpdatedAt    = series.UpdatedAt.Value
         };
     }
 
@@ -331,6 +331,42 @@ public class Service: IService
             CoverFile = s.CoverFile,
             TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
             Status = s.Status,
+            CreateAt = s.CreatedAt
+        }).ToList();
+    }
+    
+    public async Task<List<Response.GetAllSeriesResponse>> GetAllSeriesByCategory(Request.GetSeriesByCategoryRequest request)
+    {
+        if(request.CategoryIds == null || request.CategoryIds.Count == 0)
+            throw new ArgumentNullException("At least one category id is required.");
+        
+        var categoryCount = await _dbContext.Categories
+            .CountAsync(x => request.CategoryIds.Contains(x.Id));
+        
+        if(categoryCount != request.CategoryIds.Count)
+            throw new KeyNotFoundException("One or more category is not found.");
+            
+        var seriesList = await _dbContext.Series
+            .Where(s => s.CategorySeries.Any(cs => request.CategoryIds.Contains(cs.CategoryId)))
+            .Include(s => s.CreatedBy)
+            .Include(s => s.Chapters)
+            .Include(s => s.CategorySeries)
+            .ThenInclude(cs => cs.Category)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+        
+        if(!seriesList.Any())
+            throw new KeyNotFoundException("No series found");
+
+        return seriesList.Select(s => new Response.GetAllSeriesResponse()
+        {
+            SeriesId = s.Id,
+            Title = s.Title,
+            Categories = s.CategorySeries.Select(cs => cs.Category.Name).ToList(),
+            CoverFile = s.CoverFile,
+            Status = s.Status,
+            MangakaName = s.CreatedBy.AuthorName ?? $"{s.CreatedBy.FirstName}{s.CreatedBy.LastName}",
+            TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
             CreateAt = s.CreatedAt
         }).ToList();
     }

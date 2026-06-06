@@ -1,10 +1,12 @@
-﻿using Manga.Service.Auth;
+﻿using Manga.Api.extensions;
+using Manga.Service.Auth;
 using Manga.Service.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase
 {   
     private readonly IService _identityService;
@@ -19,7 +21,7 @@ public class AuthController : ControllerBase
             var result = await _identityService.Login(request);
             return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
     }
-
+    [Authorize (Policy =  JwtExtensions.AdminPolicy)]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request)
     {

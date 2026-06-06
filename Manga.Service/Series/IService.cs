@@ -11,4 +11,5 @@ public interface IService
     Task<Response.ReviewSeriesResponse> ReviewSeriesByTantouEditor(Guid seriesId, Request.ReviewSeriesRequest request);
     Task<Response.ReviewSeriesResponse> ApprovedSeriesByEditorialBoard(Guid seriesId, Request.ReviewSeriesRequest request);
     Task<List<Response.GetAllSeriesResponse>> FilterSeriesByStatus(SeriesStatus status);
+    Task<List<Response.GetAllSeriesResponse>> GetAllSeriesByCategory(Request.GetSeriesByCategoryRequest request);
 }
