@@ -57,7 +57,7 @@ public class Service : IService
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow
         };
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync();
@@ -126,10 +126,11 @@ public class Service : IService
 
     public async Task<Response.LoginResponse> RefreshToken(Request.RefreshTokenRequest request)
     {
-        var session =
-            await _dbContext.UserSessions.FirstOrDefaultAsync(x =>
-                x.RefreshToken == request.RefreshToken && !x.IsRevoked)
-            ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
+        var session = await _dbContext.UserSessions
+                          .Include(x => x.User)
+                          .FirstOrDefaultAsync(x =>
+                          x.RefreshToken == request.RefreshToken && !x.IsRevoked)
+                      ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
         if (session.ExpiresAt < DateTime.UtcNow)
         {
             session.IsRevoked = true;
@@ -183,7 +184,7 @@ public class Service : IService
 
     public async Task<String> ForgotPassword(Request.ForgotPasswordRequest request)
     {
-        var user = _dbContext.Users.FirstOrDefault(x => x.Email == request.Email);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
         {
             throw new ArgumentException("Email does not used");

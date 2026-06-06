@@ -21,7 +21,8 @@ public class Service : IService
 
     public async Task<Response.CreateNewTaskResponse> CreateNewTask(Request.CreateNewTaskRequest request)
     {
-        var userId = _httpContextAccessor.HttpContext!.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
         if (userId == null) throw new UnauthorizedAccessException("Unauthorized");
 
         var userIdGuid = Guid.Parse(userId);
@@ -51,15 +52,16 @@ public class Service : IService
             TaskTitle = request.TaskTitle,
             TaskDescription = request.TaskDescription,
             Deadline = request.Deadline,
-            AssignedAt = DateTimeOffset.Now,
+            AssignedAt = DateTimeOffset.UtcNow,
             ChapterId = request.ChapterId,
             AssignedToId = request.AssignedToId,
             CreatedById = userIdGuid,
+            CreatedAt = DateTimeOffset.UtcNow,
             Income = new Income()
             {
                 Id = Guid.NewGuid(),
                 Amount = request.AmountIncome,
-                CreatedAt = DateTimeOffset.Now,
+                CreatedAt = DateTimeOffset.UtcNow,
             },
         };
         _dbContext.Add(mangaTask);
@@ -73,7 +75,7 @@ public class Service : IService
             AssignedToId = mangaTask.AssignedToId,
             AssignedAt = mangaTask.AssignedAt,
             ChapterId = mangaTask.ChapterId,
-            Income = mangaTask.Income,
+            Income = mangaTask.Income.Amount,
             CreatedAt = mangaTask.CreatedAt
         };
     }
@@ -83,53 +85,46 @@ public class Service : IService
         var userId = _httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
         if (userId == null) throw new UnauthorizedAccessException("Unauthorized");
         var userIdGuid = Guid.Parse(userId);
-        // var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        var taskDetail = await _dbContext.MangaTasks
+            .Where(x => x.Id == request.TaskId)
+            .Select(x => new Response.GetTaskDetailsResponse
+            {
+                Id = x.Id,
+                TaskTitle = x.TaskTitle,
+                TaskDescription = x.TaskDescription,
+                SubmittedFileUrl = x.submittedFileUrl,
+                Status = x.Status,
+                Deadline = x.Deadline,
+                AssignedAt = x.AssignedAt,
+                SubmittedAt = x.SubmittedAt,
+                ChapterId = x.ChapterId,
+                CreatedById = x.CreatedById,
+                AssignedToId = x.AssignedToId,
+                IncomeAmount = x.Income.Amount,
 
+                Feedback = x.Feedbacks
+                    .OrderBy(f => f.CreatedAt)
+                    .Select(f => new Response.FeedbackSummaryResponse
+                    {
+                        FeedbackId = f.Id,
+                        SenderId = f.SenderId,
+                        ReceiverId = f.ReceiverId,
+                        Content = f.Content,
+                        CreatedAt = f.CreatedAt
+                    }).ToList(),
+            })
+            .FirstOrDefaultAsync();
 
-        var taskChapter = await _dbContext.MangaTasks
-            .Include(x => x.Chapter)
-            .Include(x => x.CreatedBy)
-            .Include(x => x.Income)
-            .Include(x => x.AssignedTo)
-            .Include(x => x.Feedbacks)
-            .ThenInclude(x => x.Sender)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(x => x.Id == request.TaskId);
-        if (taskChapter == null) throw new KeyNotFoundException("Task not found");
+        if (taskDetail == null) throw new KeyNotFoundException("Task not found");
 
-        if (userIdGuid != taskChapter.AssignedToId && userIdGuid != taskChapter.CreatedById)
+        if (userIdGuid != taskDetail.CreatedById && userIdGuid != taskDetail.AssignedToId)
             throw new UnauthorizedAccessException("You don't have permission to access this task");
 
-
-        var feedbackList = taskChapter.Feedbacks.OrderBy(x => x.CreatedAt)
-            .Select(x => new Response.FeedbackSummaryResponse()
-            {
-                FeedbackId = x.Id,
-                SenderId = x.SenderId,
-                ReceiverId = x.ReceiverId,
-                Content = x.Content,
-                CreatedAt = x.CreatedAt,
-            }).ToList();
-
-        return new Response.GetTaskDetailsResponse()
-        {
-            Id = taskChapter.Id,
-            TaskTitle = taskChapter.TaskTitle,
-            TaskDescription = taskChapter.TaskDescription,
-            SubmittedFileUrl = taskChapter.submittedFileUrl,
-            Status = taskChapter.Status,
-            Deadline = taskChapter.Deadline,
-            AssignedAt = taskChapter.AssignedAt,
-            SubmittedAt = taskChapter.SubmittedAt,
-            ChapterId = taskChapter.ChapterId,
-            CreatedById = taskChapter.CreatedById,
-            AssignedToId = taskChapter.AssignedToId,
-            Income = taskChapter.Income,
-            Feedback = feedbackList
-        };
+        return taskDetail;
     }
 
-    //Cái này e làm luôn chức năng filter theo status luôn nha
+
+//Cái này e làm luôn chức năng filter theo status luôn nha
     public async Task<List<Response.GetTaskListResponse>> GetTaskList(Request.GetTaskListRequest request)
     {
         var userId = _httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
@@ -149,10 +144,12 @@ public class Service : IService
         {
             query = query.Where(t => t.CreatedById == userIdGuid);
         }
+
         if (request.ChapterId.HasValue)
         {
             query = query.Where(t => t.ChapterId == request.ChapterId.Value);
         }
+
         if (request.Status.HasValue)
         {
             query = query.Where(t => t.Status == request.Status);

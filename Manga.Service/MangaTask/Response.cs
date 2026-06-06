@@ -14,7 +14,8 @@ public class Response
         public DateTimeOffset? AssignedAt { get; set; }
         public Guid ChapterId { get; set; }
         public Guid AssignedToId { get; set; }
-        public Income? Income { get; set; }
+        // public Income? Income { get; set; }
+        public decimal Income { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }
     public class GetTaskDetailsResponse
@@ -30,7 +31,7 @@ public class Response
         public required Guid ChapterId { get; set; }
         public Guid CreatedById { get; set; }
         public Guid AssignedToId { get; set; }
-        public Income? Income { get; set; }
+        public decimal? IncomeAmount { get; set; }
         public List<FeedbackSummaryResponse> Feedback { get; set; } = new();
     } 
     public class GetTaskListResponse

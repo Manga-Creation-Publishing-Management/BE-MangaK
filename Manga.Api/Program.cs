@@ -12,7 +12,7 @@ using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
-using MangaTaskService = Manga.Service.MailService;
+using MangaTaskService = Manga.Service.MangaTask;
 
 var builder = WebApplication.CreateBuilder(args);
 
