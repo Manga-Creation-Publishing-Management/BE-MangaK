@@ -292,4 +292,82 @@ public class Service: IService
             UpdatedAt    = series.UpdatedAt.Value
         };
     }
+
+    public async Task<List<Response.GetAllSeriesResponse>> FilterSeriesByStatus(SeriesStatus status)
+    {
+        var user = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(u => u.Type == "userId" || u.Type == "UserId")?.Value;
+        
+        if(String.IsNullOrEmpty(user))
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(user!);
+        
+        var users = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        
+        if(users == null)
+            throw new UnauthorizedAccessException("User not found");
+        
+        if(users.Role == UserRole.Reader)
+            throw new UnauthorizedAccessException("Reader is not allowed to filter series by status ");
+        var seriesList = await _dbContext.Series
+            .Where(s => s.Status == status && !s.IsDeleted)
+            .Include(s => s.CreatedBy)
+            .Include(s => s.Chapters)
+            .Include(s => s.CategorySeries)
+            .ThenInclude(cs => cs.Category)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        if (!seriesList.Any())
+            throw new KeyNotFoundException($"No Series found with {status}");
+
+        return seriesList.Select(s => new Response.GetAllSeriesResponse()
+        {
+            SeriesId = s.Id,
+            Title = s.Title,
+            MangakaName = s.CreatedBy.AuthorName ?? $"{s.CreatedBy.FirstName}{s.CreatedBy.LastName}",
+            Categories = s.CategorySeries.Select(cs => cs.Category.Name).ToList(),
+            CoverFile = s.CoverFile,
+            TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
+            Status = s.Status,
+            CreateAt = s.CreatedAt
+        }).ToList();
+    }
+    
+    public async Task<List<Response.GetAllSeriesResponse>> GetAllSeriesByCategory(Request.GetSeriesByCategoryRequest request)
+    {
+        if(request.CategoryIds == null || request.CategoryIds.Count == 0)
+            throw new ArgumentNullException("At least one category id is required.");
+        
+        var categoryCount = await _dbContext.Categories
+            .CountAsync(x => request.CategoryIds.Contains(x.Id));
+        
+        if(categoryCount != request.CategoryIds.Count)
+            throw new KeyNotFoundException("One or more category is not found.");
+            
+        var seriesList = await _dbContext.Series
+            .Where(s => s.CategorySeries.Any(cs => request.CategoryIds.Contains(cs.CategoryId)))
+            .Include(s => s.CreatedBy)
+            .Include(s => s.Chapters)
+            .Include(s => s.CategorySeries)
+            .ThenInclude(cs => cs.Category)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+        
+        if(!seriesList.Any())
+            throw new KeyNotFoundException("No series found");
+
+        return seriesList.Select(s => new Response.GetAllSeriesResponse()
+        {
+            SeriesId = s.Id,
+            Title = s.Title,
+            Categories = s.CategorySeries.Select(cs => cs.Category.Name).ToList(),
+            CoverFile = s.CoverFile,
+            Status = s.Status,
+            MangakaName = s.CreatedBy.AuthorName ?? $"{s.CreatedBy.FirstName}{s.CreatedBy.LastName}",
+            TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
+            CreateAt = s.CreatedAt
+        }).ToList();
+    }
 }

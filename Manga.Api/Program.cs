@@ -11,6 +11,7 @@ using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
+using PublishingScheduleService = Manga.Service.PublishingSchedule;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,7 @@ builder.Services.AddSwaggerServices();
 builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
 builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
 builder.Services.AddScoped<MailService.IService, MailService.Service>();
+builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
