@@ -20,7 +20,7 @@ public class MangaTaskController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.MangakaPolicy)]
     [HttpPost("create-tasks")]
-    public async Task<IActionResult> CreateNewTasks([FromQuery] Request.CreateNewTaskRequest request)
+    public async Task<IActionResult> CreateNewTasks([FromBody] Request.CreateNewTaskRequest request)
     {
         var result = await _mangaTaskservice.CreateNewTask(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create Task Successfully", HttpContext.TraceIdentifier));
@@ -32,6 +32,13 @@ public class MangaTaskController : ControllerBase
     {
         var result = await _mangaTaskservice.GetTaskDetails(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Task Details Successfully",
+            HttpContext.TraceIdentifier));
+    }
+    [HttpGet("get-tasks-list")]
+    public async Task<IActionResult> GetTaskList([FromQuery] Request.GetTaskListRequest request)
+    {
+        var result = await _mangaTaskservice.GetTaskList(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Task List Successfully",
             HttpContext.TraceIdentifier));
     }
 }

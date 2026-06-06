@@ -35,7 +35,25 @@ public class Response
     } 
     public class GetTaskListResponse
     {
-        
+        public Guid TaskId { get; set; }
+        public string TaskTitle { get; set; }
+        public string? TaskDescription { get; set; }
+        public MangaTaskStatus Status { get; set; }
+        public DateTimeOffset Deadline { get; set; }
+        public string? SubmittedFileUrl { get; set; }
+
+        public Guid? ChapterId { get; set; }
+        public int ChapterNumber { get; set; }
+        public string ChapterTitle { get; set; }
+
+        public Guid? AssistantId { get; set; }
+        public string AssistantName { get; set; }
+
+        public Guid? MangakaId { get; set; }
+        public string MangakaAuthorName { get; set; }
+
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? SubmittedAt { get; set; }
     }
     public class FeedbackSummaryResponse
     {
