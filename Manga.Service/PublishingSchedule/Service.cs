@@ -80,4 +80,53 @@ public class Service: IService
             CreateAt = DateTimeOffset.UtcNow
         };
     }
+
+    public async Task<List<Response.GetPublishingScheduleResponse>> GetAllPublishingSchedules()
+    {
+        var userIdStr = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(c => c.Type == "userId" || c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userIdStr))
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userIdStr);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (user == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        var allowedRoles = new[]
+        {
+            UserRole.EditorialBoard,
+            UserRole.TantouEditor,
+            UserRole.Admin
+        };
+        
+        if(!allowedRoles.Contains(user.Role))
+            throw new UnauthorizedAccessException("Only EditorialBoard, TantouEditor, Admin can view all publishing schedules.");
+
+        var schedule = await _dbContext.PublishingSchedules
+            .Where(p => !p.IsDeleted)
+            .Include(p => p.Series)
+            .ThenInclude(s => s.CreatedBy)
+            .Include(p => p.DecidedBy)
+            .OrderBy(p => p.PublishDate)
+            .ToListAsync();
+
+        return schedule.Select(p => new Response.GetPublishingScheduleResponse()
+        {
+            ScheduleId = p.Id,
+            SeriesId = p.SeriesId,
+            SeriesTitle = p.Series.Title,
+            SeriesCoverFile = p.Series.CoverFile,
+            SeriesStatus = p.Series.Status,
+            MangakaName = p.Series.CreatedBy.AuthorName ??
+                          $"{p.Series.CreatedBy.FirstName}{p.Series.CreatedBy.LastName}",
+            PublishDate = p.PublishDate,
+            PublishPeriod = p.PublishPeriod,
+            DecidedByName = $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}",
+            CreatedAt = p.CreatedAt,
+            UpdatedAt = p.UpdatedAt
+        }).ToList();    
+    }
 }

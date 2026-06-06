@@ -24,4 +24,13 @@ public class PublishingScheduleController: ControllerBase
         var createSeries = await _scheduleService.CreatePublishingSchedule(seriesId, request);
         return Ok(ApiResponseFactory.SuccessResponse(createSeries, "Create Chapter Successfully", HttpContext.TraceIdentifier));
     }
+    
+    [Authorize]
+    [HttpPost("get-all-schedule")]
+    public async Task<IActionResult> GetAllPublishingSchedule()
+    {
+        var result = await _scheduleService.GetAllPublishingSchedules();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get All Publishing Schedule Successfully", HttpContext.TraceIdentifier));
+    }
+    
 }
