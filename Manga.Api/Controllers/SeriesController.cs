@@ -70,4 +70,11 @@ public class SeriesController: ControllerBase
        var result = await _seriesService.FilterSeriesByStatus(status);
        return Ok(ApiResponseFactory.SuccessResponse(result, "Filter series by status successfully.", HttpContext.TraceIdentifier));
    }
+   
+   [HttpPost("by-category")]
+   public async Task<IActionResult> GetAllSeriesByCategory([FromBody] Request.GetSeriesByCategoryRequest request)
+   {
+       var result = await _seriesService.GetAllSeriesByCategory(request);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Get series by category successfully.", HttpContext.TraceIdentifier));
+   }
 }
