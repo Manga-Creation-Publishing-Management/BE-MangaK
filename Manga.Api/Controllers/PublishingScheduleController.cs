@@ -32,5 +32,13 @@ public class PublishingScheduleController: ControllerBase
         var result = await _scheduleService.GetAllPublishingSchedules();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get All Publishing Schedule Successfully", HttpContext.TraceIdentifier));
     }
+
+    [Authorize]
+    [HttpPost("update-schedule")]
+    public async Task<IActionResult> UpdatePublishingSchedule(Guid scheduleId, [FromBody] Request.UpdatePublishingScheduleRequest request)
+    {
+        var result = await _scheduleService.UpdatePublishingSchedule(scheduleId, request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Update Publishing Schedule Successfully", HttpContext.TraceIdentifier));
+    }
     
 }
