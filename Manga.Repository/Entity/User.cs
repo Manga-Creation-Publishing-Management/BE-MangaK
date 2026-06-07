@@ -30,7 +30,7 @@ public class User: BaseEntity<Guid>, IAuditableEntity
     public ICollection<MangaTask> CreatedTasks { get; set; } = new List<MangaTask>();
     //editorial board
     public ICollection<Series> ApprovedSeries { get; set; } = new List<Series>();
-    public PublishingSchedule? DecidedSchedule { get; set; }
+    public ICollection<PublishingSchedule> DecidedSchedules { get; set; } = new List<PublishingSchedule>();
     //assistant
     public ICollection<MangaTask> AssignedTasks { get; set; } = new List<MangaTask>();
     //reader
