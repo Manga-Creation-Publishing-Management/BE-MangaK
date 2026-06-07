@@ -18,4 +18,9 @@ public class Request
         public required bool IsApproved { get; set; }
         public string? Note { get; set; }
     }
+    
+    public class GetSeriesByCategoryRequest
+    {
+        public required List<Guid> CategoryIds { get; set; }
+    }
 }

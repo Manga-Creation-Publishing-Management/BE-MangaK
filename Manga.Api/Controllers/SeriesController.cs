@@ -1,4 +1,5 @@
 ﻿using Manga.Api.extensions;
+using Manga.Repository.Entity.Enums;
 using Manga.Service.Model;
 using Manga.Service.Series;
 using Microsoft.AspNetCore.Authorization;
@@ -60,5 +61,20 @@ public class SeriesController: ControllerBase
    {
        var result = await _seriesService.ApprovedSeriesByEditorialBoard(seriesId, request);
        return Ok(ApiResponseFactory.SuccessResponse(result, "Series reviewed by EditorialBoard.", HttpContext.TraceIdentifier));
+   }
+   
+   [Authorize]
+   [HttpGet("filter-series-by-status")]
+   public async Task<IActionResult> ApprovedSeriesByEditorialBoard(SeriesStatus status)
+   {
+       var result = await _seriesService.FilterSeriesByStatus(status);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Filter series by status successfully.", HttpContext.TraceIdentifier));
+   }
+   
+   [HttpPost("by-category")]
+   public async Task<IActionResult> GetAllSeriesByCategory([FromBody] Request.GetSeriesByCategoryRequest request)
+   {
+       var result = await _seriesService.GetAllSeriesByCategory(request);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Get series by category successfully.", HttpContext.TraceIdentifier));
    }
 }

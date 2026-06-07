@@ -22,11 +22,11 @@ public class Response
     {
         public Guid SeriesId { get; set; }
         public required string Title { get; set; }
+        public string MangakaName { get; set; } = string.Empty;
         public List<string> Categories { get; set; } = new(); 
         public string? CoverFile { get; set; }
-        public SeriesStatus Status { get; set; }
-        public string MangakaName { get; set; } = string.Empty;
         public int TotalChapters { get; set; }
+        public SeriesStatus Status { get; set; }
         public DateTimeOffset CreateAt { get; set; }
     }
     
