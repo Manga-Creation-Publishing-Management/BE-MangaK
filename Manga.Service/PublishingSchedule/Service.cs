@@ -1,4 +1,5 @@
-﻿using Manga.Repository.Data;
+﻿using MailKit.Net.Imap;
+using Manga.Repository.Data;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -115,18 +116,120 @@ public class Service: IService
 
         return schedule.Select(p => new Response.GetPublishingScheduleResponse()
         {
-            ScheduleId = p.Id,
-            SeriesId = p.SeriesId,
-            SeriesTitle = p.Series.Title,
+            ScheduleId      = p.Id,
+            SeriesId        = p.SeriesId,
+            SeriesTitle     = p.Series.Title,
             SeriesCoverFile = p.Series.CoverFile,
-            SeriesStatus = p.Series.Status,
-            MangakaName = p.Series.CreatedBy.AuthorName ??
+            SeriesStatus    = p.Series.Status,
+            MangakaName     = p.Series.CreatedBy.AuthorName ??
                           $"{p.Series.CreatedBy.FirstName}{p.Series.CreatedBy.LastName}",
-            PublishDate = p.PublishDate,
-            PublishPeriod = p.PublishPeriod,
-            DecidedByName = $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}",
-            CreatedAt = p.CreatedAt,
-            UpdatedAt = p.UpdatedAt
+            PublishDate     = p.PublishDate,
+            PublishPeriod   = p.PublishPeriod,
+            DecidedByName   = $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}",
+            CreatedAt       = p.CreatedAt,
+            UpdatedAt       = p.UpdatedAt
         }).ToList();    
+    }
+
+    public async Task<Response.GetPublishingScheduleResponse> UpdatePublishingSchedule(Guid scheduleId, Request.UpdatePublishingScheduleRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")!.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid);
+        
+        if(user == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (user.Role != UserRole.EditorialBoard)
+            throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
+        
+        var schedule =
+            await _dbContext.PublishingSchedules
+                .Where(p => p.Id == scheduleId)
+                .Include(p => p.Series)
+                .ThenInclude(s => s.CreatedBy)
+                .Include(p => p.DecidedBy)
+                .OrderBy(p => p.PublishDate)
+                .FirstOrDefaultAsync();
+
+        if(schedule == null)
+            throw new KeyNotFoundException("Publishing schedule not found");
+        
+        if(schedule.Series.Status != SeriesStatus.Publishing)
+            throw new InvalidOperationException($"Series must be in publishing status. Current status{schedule.Series.Status}");
+        
+        if(request.PublishDate <= DateTimeOffset.UtcNow)
+            throw new ArgumentException("Publish must be in the future");
+
+        schedule.PublishDate = request.PublishDate;
+
+        if (request.PublishPeriod != null)
+            schedule.PublishPeriod = request.PublishPeriod;
+        
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return new Response.GetPublishingScheduleResponse()
+        {
+            ScheduleId = schedule.Id,
+            SeriesId = schedule.Series.Id,
+            SeriesTitle = schedule.Series.Title,
+            SeriesCoverFile = schedule.Series.CoverFile,
+            SeriesStatus = schedule.Series.Status,
+            MangakaName = schedule.Series.CreatedBy.AuthorName
+                          ?? $"{schedule.Series.CreatedBy.FirstName} {schedule.Series.CreatedBy.LastName}",
+            PublishDate = schedule.PublishDate,
+            PublishPeriod = schedule.PublishPeriod,
+            DecidedByName = schedule.DecidedBy != null
+                ? $"{schedule.DecidedBy.FirstName} {schedule.DecidedBy.LastName}"
+                : string.Empty,
+            CreatedAt = schedule.CreatedAt,
+            UpdatedAt = schedule.UpdatedAt
+        };
+    }
+
+    public async Task DeletePublishingSchedule(Guid scheduleId)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")!.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid);
+        
+        if(user == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (user.Role != UserRole.EditorialBoard)
+            throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
+        
+        var schedule =
+            await _dbContext.PublishingSchedules
+                .Where(p => p.Id == scheduleId)
+                .Include(p => p.Series)
+                .ThenInclude(s => s.CreatedBy)
+                .Include(p => p.DecidedBy)
+                .OrderBy(p => p.PublishDate)
+                .FirstOrDefaultAsync();
+
+        if(schedule == null)
+            throw new KeyNotFoundException("Publishing schedule not found");
+        
+        schedule.IsDeleted = true;
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        schedule.Series.Status = SeriesStatus.Approved;
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        await _dbContext.SaveChangesAsync();
     }
 }

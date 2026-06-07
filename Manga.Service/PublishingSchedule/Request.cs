@@ -7,4 +7,9 @@ public class Request
         public required DateTimeOffset PublishDate { get; set; }
         public string? PublishPeriod { get; set; }
     }
+    public class UpdatePublishingScheduleRequest
+    {
+        public required DateTimeOffset PublishDate { get; set; }
+        public string? PublishPeriod { get; set; }
+    }
 }
