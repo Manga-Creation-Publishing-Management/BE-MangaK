@@ -11,6 +11,7 @@ using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
+using CategoryService = Manga.Service.Category;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,7 @@ builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
