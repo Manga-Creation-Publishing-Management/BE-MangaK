@@ -446,8 +446,7 @@ namespace Manga.Repository.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_PublishingSchedules_DecidedById",
                 table: "PublishingSchedules",
-                column: "DecidedById",
-                unique: true);
+                column: "DecidedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PublishingSchedules_SeriesId",

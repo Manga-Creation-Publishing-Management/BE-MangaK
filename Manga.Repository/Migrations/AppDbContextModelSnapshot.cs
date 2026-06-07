@@ -3,7 +3,6 @@ using System;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,11 +11,9 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260607082759_Initial")]
-    partial class Initial
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -377,8 +374,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DecidedById")
-                        .IsUnique();
+                    b.HasIndex("DecidedById");
 
                     b.HasIndex("SeriesId")
                         .IsUnique();
@@ -723,8 +719,8 @@ namespace Manga.Repository.Migrations
             modelBuilder.Entity("Manga.Repository.Entity.PublishingSchedule", b =>
                 {
                     b.HasOne("Manga.Repository.Entity.User", "DecidedBy")
-                        .WithOne("DecidedSchedule")
-                        .HasForeignKey("Manga.Repository.Entity.PublishingSchedule", "DecidedById")
+                        .WithMany("DecidedSchedules")
+                        .HasForeignKey("DecidedById")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Manga.Repository.Entity.Series", "Series")
@@ -820,7 +816,7 @@ namespace Manga.Repository.Migrations
 
                     b.Navigation("CreatedTasks");
 
-                    b.Navigation("DecidedSchedule");
+                    b.Navigation("DecidedSchedules");
 
                     b.Navigation("ReceivedFeedbacks");
 

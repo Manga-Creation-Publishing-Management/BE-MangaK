@@ -26,7 +26,7 @@ public class PublishingScheduleController: ControllerBase
     }
     
     [Authorize]
-    [HttpPost("get-all-schedule")]
+    [HttpGet("get-all-schedule")]
     public async Task<IActionResult> GetAllPublishingSchedule()
     {
         var result = await _scheduleService.GetAllPublishingSchedules();
