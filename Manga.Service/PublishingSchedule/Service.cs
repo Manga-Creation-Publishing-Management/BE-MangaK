@@ -193,4 +193,43 @@ public class Service: IService
             UpdatedAt = schedule.UpdatedAt
         };
     }
+
+    public async Task DeletePublishingSchedule(Guid scheduleId)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")!.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userId);
+
+        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid);
+        
+        if(user == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (user.Role != UserRole.EditorialBoard)
+            throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
+        
+        var schedule =
+            await _dbContext.PublishingSchedules
+                .Where(p => p.Id == scheduleId)
+                .Include(p => p.Series)
+                .ThenInclude(s => s.CreatedBy)
+                .Include(p => p.DecidedBy)
+                .OrderBy(p => p.PublishDate)
+                .FirstOrDefaultAsync();
+
+        if(schedule == null)
+            throw new KeyNotFoundException("Publishing schedule not found");
+        
+        schedule.IsDeleted = true;
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        schedule.Series.Status = SeriesStatus.Approved;
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        await _dbContext.SaveChangesAsync();
+    }
 }
