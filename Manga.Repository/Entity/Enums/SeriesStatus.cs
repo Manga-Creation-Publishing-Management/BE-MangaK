@@ -4,7 +4,7 @@ public enum SeriesStatus
 {
     Processing = 1,
     Approved,
-    PendingBoard,
+    Pending,
     Publishing,
     Rejected,
     Cancelled,
