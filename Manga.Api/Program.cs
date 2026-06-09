@@ -13,6 +13,7 @@ using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
 using CategoryService = Manga.Service.Category;
 using PublishingScheduleService = Manga.Service.PublishingSchedule;
+using UserProfileService = Manga.Service.UserProfile;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +36,7 @@ builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
-
+builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
