@@ -15,6 +15,7 @@ using MailService = Manga.Service.MailService;
 using MangaTaskService = Manga.Service.MangaTask;
 using CategoryService = Manga.Service.Category;
 using PublishingScheduleService = Manga.Service.PublishingSchedule;
+using UserProfileService = Manga.Service.UserProfile;
 using IncomeTaskService = Manga.Service.IncomeTask;
 
 
@@ -42,6 +43,7 @@ builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<IncomeTaskService.IService, IncomeTaskService.Service>();
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
 
+builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
