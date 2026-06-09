@@ -53,11 +53,20 @@ public class Service: IService
             .MaxAsync(c => (int?)c.ChapterNumber) ?? 0;
         
         var nextChapterNumber = lastChapterNumber + 1;
+        
         string? manuscriptFileUrl = null;
+        string? chapterFileUrl = null;
+        
         if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
         {
             var result = await _mediaService.UploadFileAsync(request.ManuscriptFileUrl);
             manuscriptFileUrl = result.FileUrl;
+        }
+        
+        if (request.ChapterFileUrl != null && request.ChapterFileUrl.Length > 0)
+        {
+            var result = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+            chapterFileUrl = result.FileUrl;
         }
 
         var chapter = new Repository.Entity.Chapter()
@@ -67,6 +76,7 @@ public class Service: IService
             Title = request.Title,
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
+            ChapterFileUrl = chapterFileUrl,
             Status = ChapterStatus.Processing,
             SeriesId = seriesId,
             CreatedAt = DateTimeOffset.UtcNow
@@ -82,6 +92,7 @@ public class Service: IService
             Title = chapter.Title,
             Summary = chapter.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
+            ChapterFileUrl = chapterFileUrl,
             Status = chapter.Status,
             SeriesId = seriesId,
             SeriesTitle = series.Title,

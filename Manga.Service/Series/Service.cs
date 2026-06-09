@@ -207,7 +207,7 @@ public class Service: IService
         if(editor == null)
             throw new UnauthorizedAccessException("User not found");
         
-        if(editor.Role != UserRole.TantouEditor)
+        if(editor.Role != UserRole.Tantou)
             throw new UnauthorizedAccessException("Only TantouEditor can review review series");
         
         var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
@@ -258,7 +258,7 @@ public class Service: IService
         if(board == null)
             throw new UnauthorizedAccessException("User not found");
         
-        if(board.Role != UserRole.EditorialBoard)
+        if(board.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard can review review series");
         
         var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
@@ -288,7 +288,7 @@ public class Service: IService
             Status       = series.Status,
             Note         = request.Note,
             ReviewerName = $"{board.FirstName} {board.LastName}",
-            ReviewerRole = nameof(UserRole.EditorialBoard),
+            ReviewerRole = nameof(UserRole.Editorial),
             UpdatedAt    = series.UpdatedAt.Value
         };
     }
