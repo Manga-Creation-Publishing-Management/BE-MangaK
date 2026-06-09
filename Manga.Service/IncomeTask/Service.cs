@@ -1,5 +1,4 @@
 ﻿using Manga.Repository.Data;
-using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
