@@ -2,17 +2,13 @@
 
 public class Request
 {
-    // public class CreateIncomeRequest
-    // {
-    //     public required decimal Amount { get; set; }
-    //     public required Guid MangaTaskId { get; set; }
-    // }
-    public class GetIncomeHistoryRequest
-    {
-        
-    }
 
     public class GetIncomeRequest
+    {
+        public int? month { set; get; } = 0;
+        public int? year { set; get; } = 0;
+    }
+    public class GetIncomeHistoryRequest
     {
         
     }

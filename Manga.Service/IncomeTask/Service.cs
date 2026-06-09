@@ -1,6 +1,8 @@
+
 ﻿using System.ComponentModel.DataAnnotations;
 using Manga.Repository.Data;
 using Manga.Repository.Entity.Enums;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,59 +10,73 @@ namespace Manga.Service.IncomeTask;
 
 public class Service : IService
 {
-    private readonly AppDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly AppDbContext _dbContext;
 
-    public Service(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor)
+    public Service(IHttpContextAccessor httpContextAccessor, AppDbContext dbContext)
     {
-        _dbContext = dbContext;
         _httpContextAccessor = httpContextAccessor;
+        _dbContext = dbContext;
     }
 
-    // public async Task<Response.CreateIncomeResponse> CreateIncome(Request.CreateIncomeRequest request)
-    // {
-    //     /*
-    //     1. Check người đang hd có phải là Mangaka?
-    //     2. Check trạng thái của Task ?
-    //      */
-    //     var userId = _httpContextAccessor.HttpContext.User!.Claims.FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
-    //     if(userId == null) throw new UnauthorizedAccessException("You must log in");
-    //     var userIdGuild = Guid.Parse(userId);
-    //     var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuild);
-    //     if(user == null) throw new UnauthorizedAccessException("User not found");
-    //     if(user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("You do not have permission to do this action");
-    //     
-    //     var mangaTask = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.MangaTaskId);
-    //     if(mangaTask == null) throw new KeyNotFoundException("Manga task does not exist");
-    //     if(mangaTask.IsDeleted || mangaTask.Status == MangaTaskStatus.Complete) throw new ValidationException("Manga task is complete or Manga task is already in progress");
-    //
-    //     var incomeTask = new Repository.Entity.Income()
-    //     {
-    //         Id = Guid.NewGuid(),
-    //         Amount =  request.Amount,
-    //         MangaTaskId = request.MangaTaskId,
-    //         MangaTask =  mangaTask,
-    //         CreatedAt =  DateTimeOffset.Now,
-    //     };
-    //     _dbContext.Add(incomeTask);
-    //     await _dbContext.SaveChangesAsync();
-    //     return new Response.CreateIncomeResponse()
-    //     {
-    //         IncomeId = incomeTask.Id,
-    //         Amount = incomeTask.Amount,
-    //         Status = incomeTask.Status,
-    //         MangaTaskId = incomeTask.MangaTaskId,
-    //         TaskTitle = mangaTask.TaskTitle
-    //     };
-    // }
-
-    public Task<Response.GetIncomeResponse> GetIncome(Request.GetIncomeRequest request)
+    public async Task<(List<Response.GetIncomeResponse>, decimal IncomeMonth)> GetIncome(Request.GetIncomeRequest request)
     {
-        throw new NotImplementedException();
+        var userIdGuild = GetCurrentUserId();
+        
+        var now = DateTimeOffset.UtcNow;
+        int currentMonth = (request.month.HasValue && request.month > 0) ? request.month.Value : now.Month;
+        int currentYear = (request.year.HasValue && request.year > 0) ? request.year.Value : now.Year;
+    
+        var incomes = await _dbContext.Incomes
+            .Where(i => (i.MangaTask.AssignedToId == userIdGuild || i.MangaTask.CreatedById == userIdGuild)
+                        && i.CreatedAt.Year == currentYear   
+                        && i.CreatedAt.Month == currentMonth
+           ).Select(i => new Response.GetIncomeResponse
+            {
+                IncomeId = i.Id,
+                Amount = i.Amount,
+                PaidAt = i.Date.HasValue ? i.Date.Value : DateTime.Today,
+                Status = i.Status,
+                TaskTitle = i.MangaTask != null ? i.MangaTask.TaskTitle : "Don't connect Task",
+            })
+            .ToListAsync();
+        
+        decimal totalAmount = incomes.Sum(x => x.Amount);
+        return (incomes , totalAmount);
     }
 
-    public Task<Response.GetIncomeHistoryResponse> GetIncomeHistory(Request.GetIncomeHistoryRequest request)
+    public async Task<List<Response.GetIncomeHistoryResponse>> GetIncomeHistory()
     {
-        throw new NotImplementedException();
+        var userIdGuild = GetCurrentUserId();
+        
+        var now = DateTimeOffset.UtcNow;
+        var historyIncome = await _dbContext.Incomes.Where (x => x.MangaTask.AssignedToId == userIdGuild
+        && (x.CreatedAt.Year < now.Year || (x.CreatedAt.Year == now.Year && x.CreatedAt.Month < now.Month)))
+            .GroupBy(x => new
+            {
+                Year = x.CreatedAt.Year,
+                Month = x.CreatedAt.Month
+            })
+            .Select(x => new  Response.GetIncomeHistoryResponse
+            {
+               Month =  x.Key.Month,
+               Year =  x.Key.Year,
+               TotalIncome = x.Sum(y => y.Amount)
+            })
+            .OrderByDescending(res => res.Year)
+            .ThenByDescending(res => res.Month)
+            .ToListAsync();
+        return historyIncome;
+    }
+    private Guid GetCurrentUserId()
+    {
+        var userId = _httpContextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
+            
+        if (string.IsNullOrEmpty(userId)) 
+            throw new UnauthorizedAccessException("You must log in");
+
+        return Guid.Parse(userId);
+
     }
 }
