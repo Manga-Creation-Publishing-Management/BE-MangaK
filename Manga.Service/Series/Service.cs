@@ -217,14 +217,11 @@ public class Service: IService
         
         if(series.Status != SeriesStatus.Processing)
             throw new UnauthorizedAccessException($"Series must be in processing status. Current status is: {series.Status}");
-
-
         if (request.IsApproved)
         {
             series.Status = SeriesStatus.Pending;
             series.ReviewedById = userIdGuid;
-        }
-        else
+        }else
         {
             series.Status = SeriesStatus.Rejected;
         }

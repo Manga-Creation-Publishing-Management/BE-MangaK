@@ -1,15 +1,19 @@
 ﻿using Manga.Api.extensions;
+using Manga.Repository.Entity.Enums;
+
 using Manga.Service.Auth;
 using Manga.Service.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
-{   
+{
     private readonly IService _identityService;
+
     public AuthController(IService identityService)
     {
         _identityService = identityService;
@@ -18,29 +22,34 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] Request.LoginRequest request)
     {
-            var result = await _identityService.Login(request);
-            return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
+        var result = await _identityService.Login(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Login Successfully!", HttpContext.TraceIdentifier));
     }
-    [Authorize (Policy =  JwtExtensions.AdminPolicy)]
+
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request, UserRole role)
     {
-        var result = await _identityService.Register(request);
+        var result = await _identityService.Register(request, role);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] Request.LogoutRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Logout([FromBody] Request.LogoutRequest request,
+        CancellationToken cancellationToken)
     {
         var isSuccess = await _identityService.Logout(request, cancellationToken);
         if (!isSuccess)
         {
-
-            return Ok(ApiResponseFactory.ErrorResponse( "Logout failed!", "The session does not exist, has expired, or has already been revoked.",
+            return Ok(ApiResponseFactory.ErrorResponse("Logout failed!",
+                "The session does not exist, has expired, or has already been revoked.",
                 traceId: HttpContext.TraceIdentifier));
         }
+
         return Ok(ApiResponseFactory.SuccessResponse(isSuccess, "Logout Successfully!", HttpContext.TraceIdentifier));
     }
+
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] Request.RefreshTokenRequest request)
     {
@@ -59,6 +68,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ChangePassword([FromBody] Request.ChangePasswordRequest request)
     {
         var result = await _identityService.ChangePassword(request);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Change password successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Change password successfully",
+            HttpContext.TraceIdentifier));
     }
 }
