@@ -370,4 +370,57 @@ public class Service: IService
             CreateAt = s.CreatedAt
         }).ToList();
     }
+
+    public async Task<Response.CancelSeriesResponse> CancelSeries(Guid seriesId, Request.CancelSeriesRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(c => c.Type == "userId" || c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userId);
+        
+        var board = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (board == null)
+            throw new UnauthorizedAccessException("User not found");
+        
+        if (board.Role != UserRole.Editorial)
+            throw new UnauthorizedAccessException("Only EditorialBoard can cancel series");
+        
+        var series = await _dbContext.Series
+            .Include(s => s.PublishingSchedule)
+            .FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
+
+        if (series == null)
+            throw new KeyNotFoundException("Series not found");
+        
+        if (series.Status == SeriesStatus.Cancelled)
+            throw new InvalidOperationException("Series is already cancelled");
+
+        if (series.Status == SeriesStatus.Rejected)
+            throw new InvalidOperationException("Cannot cancel a rejected series");
+        
+        if (series.PublishingSchedule != null && !series.PublishingSchedule.IsDeleted)
+        {
+            series.PublishingSchedule.IsDeleted = true;
+            series.PublishingSchedule.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        
+        series.Status = SeriesStatus.Cancelled;
+        series.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        return new Response.CancelSeriesResponse
+        {
+            SeriesId        = series.Id,
+            Title           = series.Title,
+            Status          = series.Status,
+            Reason          = request.Reason,
+            CancelledByName = board.AuthorName ?? $"{board.FirstName} {board.LastName}",
+            CancelledAt     = series.UpdatedAt!.Value
+        };
+    }
 }

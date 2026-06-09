@@ -77,4 +77,14 @@ public class SeriesController: ControllerBase
        var result = await _seriesService.GetAllSeriesByCategory(request);
        return Ok(ApiResponseFactory.SuccessResponse(result, "Get series by category successfully.", HttpContext.TraceIdentifier));
    }
+   
+   [Authorize]
+   [HttpPost("{seriesId}/cancel")]
+   public async Task<IActionResult> CancelSeries(Guid seriesId, [FromBody] Request.CancelSeriesRequest request)
+   {
+       var result = await _seriesService.CancelSeries(seriesId, request);
+       return Ok(ApiResponseFactory.SuccessResponse(result,
+           "Series cancelled successfully.",
+           HttpContext.TraceIdentifier));
+   }
 }
