@@ -4,8 +4,8 @@ public enum UserRole
 {
     Mangaka = 1,
     Assistant,
-    TantouEditor,
-    EditorialBoard,
+    Tantou,
+    Editorial,
     Reader,
     Admin
 }

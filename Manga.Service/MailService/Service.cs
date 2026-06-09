@@ -29,7 +29,7 @@ public class Service : IService
         using SmtpClient smtp = new();
 
         await smtp.ConnectAsync(_mailOptions!.Host, _mailOptions.Port,
-            SecureSocketOptions.StartTls); 
+            SecureSocketOptions.SslOnConnect); 
         await smtp.AuthenticateAsync(_mailOptions.Mail, _mailOptions.Password);
         await smtp.SendAsync(email);
         await smtp.DisconnectAsync(true);

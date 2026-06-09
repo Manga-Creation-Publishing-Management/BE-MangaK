@@ -24,7 +24,7 @@ public class Service : IService
             issuer: _jwtOptions.Issuer,
             audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(_jwtOptions.Expiration),
+            expires: DateTime.Now.AddMinutes(_jwtOptions.ExpireMinutes),
             signingCredentials: signingCredentials);
         var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
         return tokenString;
