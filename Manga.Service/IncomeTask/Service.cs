@@ -1,4 +1,8 @@
-﻿using Manga.Repository.Data;
+
+﻿using System.ComponentModel.DataAnnotations;
+using Manga.Repository.Data;
+using Manga.Repository.Entity.Enums;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,5 +77,6 @@ public class Service : IService
             throw new UnauthorizedAccessException("You must log in");
 
         return Guid.Parse(userId);
+
     }
 }

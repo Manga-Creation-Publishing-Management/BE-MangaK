@@ -4,6 +4,7 @@ namespace Manga.Service.IncomeTask;
 
 public class Response
 {
+
     public class GetIncomeResponse
     {
         public Guid IncomeId { get; set; }
@@ -17,5 +18,6 @@ public class Response
         public int Month { get; set; }
         public int Year { get; set; }
         public decimal TotalIncome { get; set; }
+
     }
 }
