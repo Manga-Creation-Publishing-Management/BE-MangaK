@@ -22,11 +22,11 @@ public class Response
     {
         public Guid SeriesId { get; set; }
         public required string Title { get; set; }
+        public string MangakaName { get; set; } = string.Empty;
         public List<string> Categories { get; set; } = new(); 
         public string? CoverFile { get; set; }
-        public SeriesStatus Status { get; set; }
-        public string MangakaName { get; set; } = string.Empty;
         public int TotalChapters { get; set; }
+        public SeriesStatus Status { get; set; }
         public DateTimeOffset CreateAt { get; set; }
     }
     
@@ -52,5 +52,17 @@ public class Response
        public string? Summary { get; set; }
        public ChapterStatus Status { get; set; }
        public DateTimeOffset CreatedAt { get; set; }
+    }
+    
+    public class ReviewSeriesResponse
+    {
+        public Guid SeriesId { get; set; }
+        public required string Title { get; set; }
+        public SeriesStatus Status { get; set; }
+        public string? Note { get; set; }
+        public string ReviewerName { get; set; } = string.Empty;
+        public string ReviewerRole { get; set; } = string.Empty;
+        public DateTimeOffset UpdatedAt { get; set; }
+        
     }
 }

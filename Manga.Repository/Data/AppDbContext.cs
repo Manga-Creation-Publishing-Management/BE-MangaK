@@ -52,7 +52,7 @@ public class AppDbContext : DbContext
             builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne(u => u.DecidedSchedule).WithOne(p => p.DecidedBy).HasForeignKey<PublishingSchedule>(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(u => u.DecidedSchedules).WithOne(p => p.DecidedBy).HasForeignKey(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -153,9 +153,7 @@ public class AppDbContext : DbContext
         {
             builder.Property(p => p.PublishDate).IsRequired();
             builder.Property(p => p.PublishPeriod).HasMaxLength(50);
-
             builder.HasIndex(p => p.SeriesId).IsUnique();
-            builder.HasIndex(p => p.DecidedById).IsUnique();
         });
         
         modelBuilder.Entity<CategorySeries>(builder =>

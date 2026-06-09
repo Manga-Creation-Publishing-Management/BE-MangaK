@@ -38,10 +38,13 @@ public class Request
 
     public class ForgotPasswordRequest
     {
+        public required string Email { get; set;} = string.Empty;
     }
 
     public class ChangePasswordRequest
     {
+        public required int Code { get; set; }
+        public required string NewPassword { get; set;} = string.Empty;
     }
 
     public class LogoutRequest

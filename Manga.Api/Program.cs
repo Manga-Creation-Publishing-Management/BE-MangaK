@@ -1,3 +1,4 @@
+using MailKit;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
@@ -9,6 +10,9 @@ using ChapterService = Manga.Service.Chapter;
 using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
+using MailService = Manga.Service.MailService;
+using CategoryService = Manga.Service.Category;
+using PublishingScheduleService = Manga.Service.PublishingSchedule;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +34,7 @@ builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -42,9 +47,27 @@ builder.Services.AddSwaggerServices();
 
 builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
 builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
+builder.Services.AddScoped<MailService.IService, MailService.Service>();
+builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
+
+//AI
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") 
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); 
+    });
+});
+
+//AI
+
+
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -60,6 +83,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+//AI
+app.UseCors("AllowFrontend");
+//AI
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseAuthentication();
