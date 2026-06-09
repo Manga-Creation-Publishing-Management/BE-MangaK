@@ -21,11 +21,7 @@ public class Service : IService
 
     public async Task<Response.CreateNewTaskResponse> CreateNewTask(Request.CreateNewTaskRequest request)
     {
-        var userId = _httpContextAccessor.HttpContext!.User.Claims
-            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
-        if (userId == null) throw new UnauthorizedAccessException("Unauthorized");
-
-        var userIdGuid = Guid.Parse(userId);
+        var userIdGuid = GetCurrentUserId();
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
         if (user == null) throw new UnauthorizedAccessException("Unauthorized");
         if (user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka is allowed");
@@ -46,6 +42,16 @@ public class Service : IService
         if (assignedAssistant == null) throw new KeyNotFoundException("Assigned assistant not found");
         if (assignedAssistant.Role != UserRole.Assistant)
             throw new UnauthorizedAccessException("Task can only be assigned to Assistant");
+        
+        if (request.Deadline <= DateTimeOffset.UtcNow)
+        {
+            throw new InvalidDataException("Deadline must be a future date.");
+        }
+
+        if (request.AmountIncome <= 0)
+        {
+            throw new InvalidDataException("Income amount must be greater than zero.");
+        }
         var mangaTask = new Repository.Entity.MangaTask()
         {
             Id = Guid.NewGuid(),
@@ -82,9 +88,7 @@ public class Service : IService
 
     public async Task<Response.GetTaskDetailsResponse> GetTaskDetails(Request.GetTaskDetailsRequest request)
     {
-        var userId = _httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (userId == null) throw new UnauthorizedAccessException("Unauthorized");
-        var userIdGuid = Guid.Parse(userId);
+        var userIdGuid = GetCurrentUserId();
         var taskDetail = await _dbContext.MangaTasks
             .Where(x => x.Id == request.TaskId)
             .Select(x => new Response.GetTaskDetailsResponse
@@ -127,9 +131,7 @@ public class Service : IService
 //Cái này e làm luôn chức năng filter theo status luôn nha
     public async Task<List<Response.GetTaskListResponse>> GetTaskList(Request.GetTaskListRequest request)
     {
-        var userId = _httpContextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
-        if (userId == null) throw new UnauthorizedAccessException("Unauthorized");
-        var userIdGuid = Guid.Parse(userId);
+        var userIdGuid = GetCurrentUserId();
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
         if (user == null) throw new KeyNotFoundException("User not found");
         if (user.Role != UserRole.Mangaka && user.Role != UserRole.Assistant)
@@ -178,5 +180,16 @@ public class Service : IService
                 MangakaAuthorName = t.CreatedBy.FirstName + " " + t.CreatedBy.LastName,
             }).ToListAsync();
         return taskList;
+    }
+    private Guid GetCurrentUserId()
+    {
+        var userId = _httpContextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
+            
+        if (string.IsNullOrEmpty(userId)) 
+            throw new UnauthorizedAccessException("You must log in");
+
+        return Guid.Parse(userId);
+
     }
 }
