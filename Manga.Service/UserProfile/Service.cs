@@ -21,23 +21,36 @@ public class Service : IService
 
     public async Task<Response.GetProfileResponse> GetProfile()
     {
-var user =  await GetUserIdCurrent();
-        return new Response.GetProfileResponse()
-        {
-            Id =  user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            AvatarUrl = user.AvatarUrl,
-            Bio = user.Bio,
-            AuthorName = user.AuthorName,
-        };
+        var userId = GetUserIdCurrent();
+        
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId && !u.IsDeleted)
+            .Select(user => new Response.GetProfileResponse
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                AvatarUrl = user.AvatarUrl,
+                Bio = user.Bio,
+                AuthorName = user.AuthorName,
+            })
+            .FirstOrDefaultAsync();
+
+        if (user == null) 
+            throw new UnauthorizedAccessException("Account disabled or does not exist");
+        return user;
     }
 
     public async Task<Response.GetProfileResponse> UpdateProfile(Request.UpdateProfileRequest request)
     {
         
-        var user = await GetUserIdCurrent();
+        var userId = GetUserIdCurrent();
+        var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == userId && !c.IsDeleted);
+        
+        if (user == null) 
+            throw new UnauthorizedAccessException("Account disabled or does not exist");
         user.FirstName = !string.IsNullOrWhiteSpace(request.FirstName) ? request.FirstName : user.FirstName;
         user.LastName = !string.IsNullOrWhiteSpace(request.LastName) ? request.LastName : user.LastName;
         user.AuthorName = !string.IsNullOrWhiteSpace(request.AuthorName) ? request.AuthorName : user.AuthorName;
@@ -64,29 +77,51 @@ var user =  await GetUserIdCurrent();
         };
     }
 
-    private async Task<User> GetUserIdCurrent()
+    public async Task<List<Response.GetUserListResponse>> GetUserList()
     {
-        var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
-        if(userId == null) throw new UnauthorizedAccessException("You must log in");
-        var userIdGuild = Guid.Parse(userId);
-        var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == userIdGuild);
-        if(user == null || user.IsDeleted) throw new UnauthorizedAccessException("Account disabled");
-        return user;
-    }
-    public async Task<List<Response.GetUserListByRole>> GetUserListByRole(Request.GetUserListByRoleRequest request)
-    {
-        var usersList = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == request.UserRole)
+        var usersList = await _dbContext.Users.Where(c => !c.IsDeleted )
             .OrderBy(c => c.FirstName)
-            .Select(c => new Response.GetUserListByRole()
+            .Select(c => new Response.GetUserListResponse()
             {
                 UserId = c.Id,
                 Email = c.Email,
                 FirstName = c.FirstName,
-                LastName = c.LastName
+                LastName = c.LastName,
+                Phone = c.Phone,
+                AvatarUrl = c.AvatarUrl,
+                Bio = c.Bio,
+                AuthorName = c.AuthorName,
+                
             })
+            .AsNoTracking()
             . ToListAsync();
         return usersList;
     }
+    public async Task<List<Response.GetUserListByRoleResponse>> GetUserListByRole(Request.GetUserListByRoleRequest request)
+    {
+        var usersList  = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == request.UserRole )
+            .OrderBy(c => c.FirstName)
+            .Select(c => new Response.GetUserListByRoleResponse()
+            {
+                UserId = c.Id,
+                Email = c.Email,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+               })
+            .AsNoTracking()
+            . ToListAsync();
+        return usersList;
+    }
+    private Guid GetUserIdCurrent()
+    {
+        var userIdStr = _httpContextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
 
- 
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userIdGuid))
+        {
+            throw new UnauthorizedAccessException("You must log in");
+        }
+
+        return userIdGuid;
+    }
 }

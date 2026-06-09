@@ -15,12 +15,23 @@ public class Response
      public string? AuthorName { get; set; }
      public string? Phone { get; set; }
     }
-    public class GetUserListByRole
+    public class GetUserListByRoleResponse
     {
         public Guid UserId { get; set; }
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
     }
-   
+
+    public class GetUserListResponse
+    {
+        public Guid UserId { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string AvatarUrl { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public string AuthorName { get; set; } = string.Empty;
+    }
 }

@@ -20,6 +20,12 @@ public class UserProfileController : ControllerBase
     public async Task<IActionResult> GetUserListByRole([FromQuery]Request.GetUserListByRoleRequest request)
     {
         var result = await _userProfileService.GetUserListByRole(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list by role Successfully", HttpContext.TraceIdentifier));
+    }
+    [HttpGet("get-user-list")]
+    public async Task<IActionResult> GetUserList()
+    {
+        var result = await _userProfileService.GetUserList();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list Successfully", HttpContext.TraceIdentifier));
     }
     
