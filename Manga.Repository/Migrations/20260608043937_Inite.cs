@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Manga.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class Inite : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -60,7 +60,7 @@ namespace Manga.Repository.Migrations
                     Description = table.Column<string>(type: "character varying(3000)", maxLength: 3000, nullable: false),
                     CoverFile = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     NameFile = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    NameFilePublicId = table.Column<string>(type: "text", nullable: true),
+                    NameFilePublicId = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Processing"),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: false),
                     ApprovedById = table.Column<Guid>(type: "uuid", nullable: true),
@@ -88,7 +88,33 @@ namespace Manga.Repository.Migrations
                         name: "FK_Series_Users_ReviewedById",
                         column: x => x.ReviewedById,
                         principalTable: "Users",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserSessions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeviceFingerprint = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    RefreshToken = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserSessions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserSessions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -420,8 +446,7 @@ namespace Manga.Repository.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_PublishingSchedules_DecidedById",
                 table: "PublishingSchedules",
-                column: "DecidedById",
-                unique: true);
+                column: "DecidedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PublishingSchedules_SeriesId",
@@ -449,6 +474,17 @@ namespace Manga.Repository.Migrations
                 table: "Users",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSessions_RefreshToken",
+                table: "UserSessions",
+                column: "RefreshToken",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSessions_UserId",
+                table: "UserSessions",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -471,6 +507,9 @@ namespace Manga.Repository.Migrations
 
             migrationBuilder.DropTable(
                 name: "PublishingSchedules");
+
+            migrationBuilder.DropTable(
+                name: "UserSessions");
 
             migrationBuilder.DropTable(
                 name: "Categories");

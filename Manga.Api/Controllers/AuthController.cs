@@ -1,5 +1,6 @@
 ﻿using Manga.Api.extensions;
 using Manga.Repository.Entity.Enums;
+
 using Manga.Service.Auth;
 using Manga.Service.Model;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Manga.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IService _identityService;
@@ -26,6 +27,7 @@ public class AuthController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request, UserRole role)
     {

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260601125426_Initial")]
-    partial class Initial
+    [Migration("20260608043937_Inite")]
+    partial class Inite
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -377,8 +377,7 @@ namespace Manga.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DecidedById")
-                        .IsUnique();
+                    b.HasIndex("DecidedById");
 
                     b.HasIndex("SeriesId")
                         .IsUnique();
@@ -418,7 +417,8 @@ namespace Manga.Repository.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<string>("NameFilePublicId")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid?>("ReviewedById")
                         .HasColumnType("uuid");
@@ -533,6 +533,52 @@ namespace Manga.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Manga.Repository.Entity.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeviceFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefreshToken")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserSessions");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.CategorySeries", b =>
@@ -676,8 +722,8 @@ namespace Manga.Repository.Migrations
             modelBuilder.Entity("Manga.Repository.Entity.PublishingSchedule", b =>
                 {
                     b.HasOne("Manga.Repository.Entity.User", "DecidedBy")
-                        .WithOne("DecidedSchedule")
-                        .HasForeignKey("Manga.Repository.Entity.PublishingSchedule", "DecidedById")
+                        .WithMany("DecidedSchedules")
+                        .HasForeignKey("DecidedById")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Manga.Repository.Entity.Series", "Series")
@@ -706,13 +752,25 @@ namespace Manga.Repository.Migrations
 
                     b.HasOne("Manga.Repository.Entity.User", "ReviewedBy")
                         .WithMany("ReviewedSeries")
-                        .HasForeignKey("ReviewedById");
+                        .HasForeignKey("ReviewedById")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ApprovedBy");
 
                     b.Navigation("CreatedBy");
 
                     b.Navigation("ReviewedBy");
+                });
+
+            modelBuilder.Entity("Manga.Repository.Entity.UserSession", b =>
+                {
+                    b.HasOne("Manga.Repository.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Manga.Repository.Entity.Category", b =>
@@ -761,7 +819,7 @@ namespace Manga.Repository.Migrations
 
                     b.Navigation("CreatedTasks");
 
-                    b.Navigation("DecidedSchedule");
+                    b.Navigation("DecidedSchedules");
 
                     b.Navigation("ReceivedFeedbacks");
 

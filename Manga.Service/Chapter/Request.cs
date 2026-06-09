@@ -10,5 +10,6 @@ public class Request
         public required string Title { get; set; }
         public string? Summary { get; set; }
         public IFormFile? ManuscriptFileUrl { get; set; }
+        public IFormFile? ChapterFileUrl { get; set; }
     }
 }
