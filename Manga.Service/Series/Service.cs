@@ -207,7 +207,7 @@ public class Service: IService
         if(editor == null)
             throw new UnauthorizedAccessException("User not found");
         
-        if(editor.Role != UserRole.TantouEditor)
+        if(editor.Role != UserRole.Tantou)
             throw new UnauthorizedAccessException("Only TantouEditor can review review series");
         
         var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
@@ -221,7 +221,7 @@ public class Service: IService
 
         if (request.IsApproved)
         {
-            series.Status = SeriesStatus.PendingBoard;
+            series.Status = SeriesStatus.Pending;
             series.ReviewedById = userIdGuid;
         }
         else
@@ -258,7 +258,7 @@ public class Service: IService
         if(board == null)
             throw new UnauthorizedAccessException("User not found");
         
-        if(board.Role != UserRole.EditorialBoard)
+        if(board.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard can review review series");
         
         var series = await _dbContext.Series.FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
@@ -266,7 +266,7 @@ public class Service: IService
         if(series == null)
             throw new KeyNotFoundException("Series not found");
         
-        if(series.Status != SeriesStatus.PendingBoard)
+        if(series.Status != SeriesStatus.Pending)
             throw new UnauthorizedAccessException($"Series must be reviewed by TantouEditor first. Current status: {series.Status}");
 
         if (request.IsApproved)
@@ -288,7 +288,7 @@ public class Service: IService
             Status       = series.Status,
             Note         = request.Note,
             ReviewerName = $"{board.FirstName} {board.LastName}",
-            ReviewerRole = nameof(UserRole.EditorialBoard),
+            ReviewerRole = nameof(UserRole.Editorial),
             UpdatedAt    = series.UpdatedAt.Value
         };
     }

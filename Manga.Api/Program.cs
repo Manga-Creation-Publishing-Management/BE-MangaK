@@ -2,6 +2,7 @@ using MailKit;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
+using Manga.Repository.Entity;
 using Microsoft.EntityFrameworkCore;
 
 using CloudinaryService = Manga.Service.CloudinaryService;
@@ -11,9 +12,12 @@ using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
+using MangaTaskService = Manga.Service.MangaTask;
 using CategoryService = Manga.Service.Category;
 using PublishingScheduleService = Manga.Service.PublishingSchedule;
 using UserProfileService = Manga.Service.UserProfile;
+using IncomeTaskService = Manga.Service.IncomeTask;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,9 +38,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
+builder.Services.AddScoped<MangaTaskService.IService, MangaTaskService.Service>();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<IncomeTaskService.IService, IncomeTaskService.Service>();
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
+
 builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")

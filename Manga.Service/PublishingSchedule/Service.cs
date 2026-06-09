@@ -33,7 +33,7 @@ public class Service: IService
         if(board == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (board.Role != UserRole.EditorialBoard)
+        if (board.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only Board must can create PublishSchedule.");
 
         var series = await _dbContext.Series
@@ -98,8 +98,8 @@ public class Service: IService
 
         var allowedRoles = new[]
         {
-            UserRole.EditorialBoard,
-            UserRole.TantouEditor,
+            UserRole.Editorial,
+            UserRole.Tantou,
             UserRole.Admin
         };
         
@@ -146,7 +146,7 @@ public class Service: IService
         if(user == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (user.Role != UserRole.EditorialBoard)
+        if (user.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
         
         var schedule =
@@ -209,7 +209,7 @@ public class Service: IService
         if(user == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (user.Role != UserRole.EditorialBoard)
+        if (user.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
         
         var schedule =
