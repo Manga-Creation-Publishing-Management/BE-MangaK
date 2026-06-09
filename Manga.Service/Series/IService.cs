@@ -12,4 +12,5 @@ public interface IService
     Task<Response.ReviewSeriesResponse> ApprovedSeriesByEditorialBoard(Guid seriesId, Request.ReviewSeriesRequest request);
     Task<List<Response.GetAllSeriesResponse>> FilterSeriesByStatus(SeriesStatus status);
     Task<List<Response.GetAllSeriesResponse>> GetAllSeriesByCategory(Request.GetSeriesByCategoryRequest request);
+    Task<Response.CancelSeriesResponse> CancelSeries(Guid seriesId, Request.CancelSeriesRequest request);
 }
