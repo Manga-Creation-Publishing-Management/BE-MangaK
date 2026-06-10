@@ -22,6 +22,7 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.GetUserListByRole(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list by role Successfully", HttpContext.TraceIdentifier));
     }
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpGet("get-user-list")]
     public async Task<IActionResult> GetUserList()
     {
