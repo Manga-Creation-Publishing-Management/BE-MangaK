@@ -65,4 +65,14 @@ public class Response
         public DateTimeOffset UpdatedAt { get; set; }
         
     }
+    
+    public class CancelSeriesResponse
+    {
+        public Guid SeriesId { get; set; }
+        public required string Title { get; set; }
+        public SeriesStatus Status { get; set; }
+        public required string Reason { get; set; }
+        public string CancelledByName { get; set; } = string.Empty;
+        public DateTimeOffset CancelledAt { get; set; }
+    }
 }

@@ -23,4 +23,9 @@ public class Request
     {
         public required List<Guid> CategoryIds { get; set; }
     }
+    
+    public class CancelSeriesRequest
+    {
+        public required string Reason { get; set; }
+    }
 }

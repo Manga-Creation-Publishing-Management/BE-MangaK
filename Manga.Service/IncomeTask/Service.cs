@@ -21,28 +21,46 @@ public class Service : IService
 
     public async Task<(List<Response.GetIncomeResponse>, decimal IncomeMonth)> GetIncome(Request.GetIncomeRequest request)
     {
-        var userIdGuild = GetCurrentUserId();
+        var userIdGuid = GetCurrentUserId();
         
         var now = DateTimeOffset.UtcNow;
         int currentMonth = (request.month.HasValue && request.month > 0) ? request.month.Value : now.Month;
         int currentYear = (request.year.HasValue && request.year > 0) ? request.year.Value : now.Year;
-    
-        var incomes = await _dbContext.Incomes
-            .Where(i => (i.MangaTask.AssignedToId == userIdGuild || i.MangaTask.CreatedById == userIdGuild)
-                        && i.CreatedAt.Year == currentYear   
-                        && i.CreatedAt.Month == currentMonth
-           ).Select(i => new Response.GetIncomeResponse
+        var startOfMonth = new DateTimeOffset(currentYear, currentMonth, 1, 0, 0, 0, TimeSpan.Zero);
+        var endOfMonth = startOfMonth.AddMonths(1);
+
+        var userRole = await _dbContext.Users
+            .Where(u => u.Id == userIdGuid)
+            .Select(u => u.Role)
+            .FirstOrDefaultAsync();
+
+        var query = _dbContext.Incomes.AsQueryable();
+        if (userRole == UserRole.Assistant)
+        {
+            query = query.Where(i => i.MangaTask.AssignedToId == userIdGuid);
+        }
+        else if (userRole == UserRole.Mangaka)
+        {
+            query = query.Where(i => i.MangaTask.CreatedById == userIdGuid);
+        }
+        else
+        {
+            return (new List<Response.GetIncomeResponse>(), 0);
+        }
+        query = query.Where(i => i.CreatedAt >= startOfMonth && i.CreatedAt < endOfMonth);
+
+        var incomes = await query.Select(i => new Response.GetIncomeResponse
             {
                 IncomeId = i.Id,
-                Amount = i.Amount,
-                PaidAt = i.Date.HasValue ? i.Date.Value : DateTime.Today,
+                Amount = userRole == UserRole.Mangaka ? -i.Amount : i.Amount,
+                PaidAt = i.Date ?? DateTime.UtcNow, 
                 Status = i.Status,
                 TaskTitle = i.MangaTask != null ? i.MangaTask.TaskTitle : "Don't connect Task",
             })
             .ToListAsync();
         
         decimal totalAmount = incomes.Sum(x => x.Amount);
-        return (incomes , totalAmount);
+        return (incomes, totalAmount);
     }
 
     public async Task<List<Response.GetIncomeHistoryResponse>> GetIncomeHistory()
@@ -50,7 +68,30 @@ public class Service : IService
         var userIdGuild = GetCurrentUserId();
         
         var now = DateTimeOffset.UtcNow;
-        var historyIncome = await _dbContext.Incomes.Where (x => x.MangaTask.AssignedToId == userIdGuild
+        var startOfCurrentMonth = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+
+        var userRole = await _dbContext.Users
+            .Where(u => u.Id == userIdGuild)
+            .Select(u => u.Role)
+            .FirstOrDefaultAsync();
+
+        var query = _dbContext.Incomes.AsQueryable();
+
+        if (userRole == UserRole.Assistant)
+        {
+            query = query.Where(i => i.MangaTask.AssignedToId == userIdGuild);
+        }
+        else if (userRole == UserRole.Mangaka)
+        {
+            query = query.Where(i => i.MangaTask.CreatedById == userIdGuild);
+        }
+        else
+        {
+            return new List<Response.GetIncomeHistoryResponse>();
+        }
+        query = query.Where(x => x.CreatedAt < startOfCurrentMonth);
+        
+        var historyIncome = await query.Where (x => x.MangaTask.AssignedToId == userIdGuild
         && (x.CreatedAt.Year < now.Year || (x.CreatedAt.Year == now.Year && x.CreatedAt.Month < now.Month)))
             .GroupBy(x => new
             {
@@ -61,7 +102,7 @@ public class Service : IService
             {
                Month =  x.Key.Month,
                Year =  x.Key.Year,
-               TotalIncome = x.Sum(y => y.Amount)
+               TotalIncome = userRole == UserRole.Mangaka ? -x.Sum(y => y.Amount) : x.Sum(y => y.Amount)
             })
             .OrderByDescending(res => res.Year)
             .ThenByDescending(res => res.Month)
