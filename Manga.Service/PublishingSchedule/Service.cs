@@ -46,7 +46,7 @@ public class Service: IService
         if (series.Status != SeriesStatus.Approved)
             throw new InvalidOperationException($"Series must be in approved status. Current status{series.Status}");
 
-        if (series.PublishingSchedule != null)
+        if (series.PublishingSchedule != null && !series.IsDeleted)
             throw new InvalidOperationException("Publishing Schedule already exists");
         
         if(request.PublishDate <= DateTimeOffset.UtcNow)

@@ -29,7 +29,11 @@ public class Service : IService
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
         if (user == null) throw new UnauthorizedAccessException("Unauthorized");
         if (user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka is allowed");
-
+        
+        var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == request.SeriesId);
+        if(series == null) throw new KeyNotFoundException("Series not found");
+        if(series.Status == SeriesStatus.Rejected) throw new KeyNotFoundException("Series was rejected");
+        
         var chapter = await _dbContext.Chapters
             .Include(x => x.Series)
             .FirstOrDefaultAsync(x => x.Id == request.ChapterId);
@@ -76,7 +80,8 @@ public class Service : IService
             AssignedAt = mangaTask.AssignedAt,
             ChapterId = mangaTask.ChapterId,
             Income = mangaTask.Income.Amount,
-            CreatedAt = mangaTask.CreatedAt
+            CreatedAt = mangaTask.CreatedAt,
+            SeriesId = series.Id,
         };
     }
 

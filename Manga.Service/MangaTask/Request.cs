@@ -7,6 +7,7 @@ public class Request
 {
     public class CreateNewTaskRequest
     {
+        public required Guid SeriesId { get; set; }
         public required string TaskTitle { get; set; }
         public string? TaskDescription { get; set; }
         public DateTimeOffset Deadline { get; set; }

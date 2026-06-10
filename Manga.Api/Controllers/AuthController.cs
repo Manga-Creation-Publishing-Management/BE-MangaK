@@ -27,7 +27,6 @@ public class AuthController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request, UserRole role)
     {

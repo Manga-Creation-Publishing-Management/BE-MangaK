@@ -31,17 +31,4 @@ public class Service : IService
             LastName = c.LastName
         }).ToList();
     }
-
-    // public async Task<List<Response.GetAssistantListResponse>> GetAssistantList()
-    // {
-    //     var assistantList = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == UserRole.Assistant)
-    //         .OrderBy(c => c.FirstName)
-    //         .ToListAsync();
-    //     return assistantList.Select(c => new Response.GetAssistantListResponse()
-    //     {
-    //         Id = c.Id,
-    //         FullName = c.FirstName + c.LastName,
-    //         Email = c.Email,
-    //     }).ToList();
-    // }
 }
