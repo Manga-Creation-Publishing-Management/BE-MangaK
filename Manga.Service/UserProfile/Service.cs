@@ -91,7 +91,7 @@ public class Service : IService
                 AvatarUrl = c.AvatarUrl,
                 Bio = c.Bio,
                 AuthorName = c.AuthorName,
-                
+                Role = c.Role,
             })
             .AsNoTracking()
             . ToListAsync();

@@ -33,5 +33,6 @@ public class Response
         public string AvatarUrl { get; set; } = string.Empty;
         public string Bio { get; set; } = string.Empty;
         public string AuthorName { get; set; } = string.Empty;
+        public UserRole Role { get; set; }
     }
 }
