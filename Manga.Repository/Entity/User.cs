@@ -9,8 +9,7 @@ public class User: BaseEntity<Guid>, IAuditableEntity
     public required string FirstName { get; set; }
     public required string LastName { get; set; }
     public required string Email { get; set; }
-    public string? PasswordHash { get; set; }
-    public string? GoogleId { get; set; }
+    public required string PasswordHash { get; set; }
     public string? Phone  { get; set; }
     public string? AvatarUrl { get; set; }
 
