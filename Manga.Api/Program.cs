@@ -2,7 +2,6 @@ using MailKit;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
-using Manga.Repository.Entity;
 using Microsoft.EntityFrameworkCore;
 
 using CloudinaryService = Manga.Service.CloudinaryService;
@@ -17,6 +16,7 @@ using CategoryService = Manga.Service.Category;
 using PublishingScheduleService = Manga.Service.PublishingSchedule;
 using UserProfileService = Manga.Service.UserProfile;
 using IncomeTaskService = Manga.Service.IncomeTask;
+using GoogleAuthService = Manga.Service.GoogleAuthService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,6 +44,7 @@ builder.Services.AddScoped<IncomeTaskService.IService, IncomeTaskService.Service
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
 
 builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
+builder.Services.AddScoped<GoogleAuthService.IService, GoogleAuthService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(

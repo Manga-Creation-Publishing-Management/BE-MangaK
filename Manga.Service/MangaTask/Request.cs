@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity;
+using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.MangaTask;
@@ -26,5 +26,28 @@ public class Request
     {
         public Guid? ChapterId { get; set; }
         public MangaTaskStatus? Status { get; set; }
+    }
+
+    public class AcceptTaskRequest
+    {
+        public Guid TaskId { get; set; }
+    }
+
+    public class RejectTaskRequest
+    {
+        public Guid TaskId { get; set; }
+    }
+
+    public class SubmitTaskRequest
+    {
+        public Guid TaskId { get; set; }
+        public required string SubmittedFileUrl { get; set; }
+    }
+
+    public class ReviewTaskRequest
+    {
+        public Guid TaskId { get; set; }
+        public bool IsApproved { get; set; }
+        public string? FeedbackContent { get; set; }
     }
 }

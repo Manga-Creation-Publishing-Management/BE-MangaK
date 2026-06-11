@@ -79,8 +79,7 @@ public class AppDbContext : DbContext
         {
             builder.Property(r => r.Email).IsRequired().HasMaxLength(128);
             builder.HasIndex(r => r.Email).IsUnique();
-            builder.Property(r => r.FirstName).HasMaxLength(128);
-            builder.Property(r => r.LastName).HasMaxLength(128);
+            builder.Property(r => r.Name).HasMaxLength(128);
             builder.Property(r => r.AvatarUrl).HasMaxLength(500);
             builder.Property(r => r.GoogleAccountId).HasMaxLength(255);
             
@@ -126,7 +125,7 @@ public class AppDbContext : DbContext
             builder.Property(t => t.TaskDescription).IsRequired().HasMaxLength(3000);
             builder.Property(t => t.submittedFileUrl).HasMaxLength(500);
             builder.Property(t => t.Status).IsRequired().HasConversion<string>().HasMaxLength(50)
-                .HasDefaultValue(MangaTaskStatus.Processing);
+                .HasDefaultValue(MangaTaskStatus.Available);
 
             builder.HasOne(t => t.Income).WithOne(i => i.MangaTask).HasForeignKey<Income>(i => i.MangaTaskId)
                 .OnDelete(DeleteBehavior.Cascade);

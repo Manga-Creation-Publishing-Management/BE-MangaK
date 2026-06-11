@@ -5,8 +5,7 @@ namespace Manga.Repository.Entity;
 public class Reader : BaseEntity<Guid>, IAuditableEntity
 {
     public required string Email { get; set; }
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
+    public string? Name { get; set; }
     public string? AvatarUrl { get; set; }
     public string? GoogleAccountId { get; set; }
 
