@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Data;
+using Manga.Repository.Data;
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -63,7 +63,7 @@ public class Service : IService
         {
             Id = Guid.NewGuid(),
             TaskTitle = request.TaskTitle,
-            TaskDescription = request.page_range,
+            TaskDescription = request.Page_range,
             Status = MangaTaskStatus.Available,
             Deadline = request.Deadline,
             AssignedAt = DateTimeOffset.UtcNow,
@@ -189,7 +189,7 @@ public class Service : IService
             }).ToListAsync();
         return taskList;
     }
-
+    
     public async Task<bool> UpdateTaskStatus(Request.UpdateTaskStatusRequest request)
     {
         var userIdGuid = GetCurrentUserId();
