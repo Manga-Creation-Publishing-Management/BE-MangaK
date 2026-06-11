@@ -1,4 +1,4 @@
-using Manga.Repository.Data;
+﻿using Manga.Repository.Data;
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -55,15 +55,15 @@ public class Service : IService
             throw new InvalidDataException("Deadline must be a future date.");
         }
 
-        if (request.AmountIncome <= 0)
-        {
-            throw new InvalidDataException("Income amount must be greater than zero.");
-        }
+        // if (request.AmountIncome <= 0)
+        // {
+        //     throw new InvalidDataException("Income amount must be greater than zero.");
+        // }
         var mangaTask = new Repository.Entity.MangaTask()
         {
             Id = Guid.NewGuid(),
             TaskTitle = request.TaskTitle,
-            TaskDescription = request.TaskDescription,
+            TaskDescription = request.page_range,
             Status = MangaTaskStatus.Available,
             Deadline = request.Deadline,
             AssignedAt = DateTimeOffset.UtcNow,
@@ -189,28 +189,15 @@ public class Service : IService
             }).ToListAsync();
         return taskList;
     }
-    public async Task<bool> AcceptTask(Request.AcceptTaskRequest request)
+
+    public async Task<bool> UpdateTaskStatus(Request.UpdateTaskStatusRequest request)
     {
         var userIdGuid = GetCurrentUserId();
         var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.AssignedToId != userIdGuid) throw new UnauthorizedAccessException("You are not assigned to this task");
         if (task.Status != MangaTaskStatus.Available) throw new InvalidOperationException("Task is not available to be accepted");
-
-        task.Status = MangaTaskStatus.Processing;
-        await _dbContext.SaveChangesAsync();
-        return true;
-    }
-
-    public async Task<bool> RejectTask(Request.RejectTaskRequest request)
-    {
-        var userIdGuid = GetCurrentUserId();
-        var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
-        if (task == null) throw new KeyNotFoundException("Task not found");
-        if (task.AssignedToId != userIdGuid) throw new UnauthorizedAccessException("You are not assigned to this task");
-        if (task.Status != MangaTaskStatus.Available) throw new InvalidOperationException("Task is not available to be rejected");
-
-        task.Status = MangaTaskStatus.Rejected;
+        task.Status = request.Status;
         await _dbContext.SaveChangesAsync();
         return true;
     }

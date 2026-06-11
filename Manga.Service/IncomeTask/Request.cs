@@ -8,8 +8,5 @@ public class Request
         public int? month { set; get; } = 0;
         public int? year { set; get; } = 0;
     }
-    public class GetIncomeHistoryRequest
-    {
-        
-    }
+    
 }

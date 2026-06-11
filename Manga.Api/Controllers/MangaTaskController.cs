@@ -1,4 +1,4 @@
-using Manga.Api.extensions;
+﻿using Manga.Api.extensions;
 using Manga.Repository.Entity;
 using Manga.Service.MangaTask;
 using Manga.Service.Model;
@@ -43,19 +43,11 @@ public class MangaTaskController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AssistantPolicy)]
-    [HttpPut("accept-task")]
-    public async Task<IActionResult> AcceptTask([FromBody] Request.AcceptTaskRequest request)
+    [HttpPut("update-task-status")]
+    public async Task<IActionResult> UpdateTaskStatus([FromBody] Request.UpdateTaskStatusRequest request)
     {
-        var result = await _mangaTaskservice.AcceptTask(request);
+        var result = await _mangaTaskservice.UpdateTaskStatus(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Task Accepted Successfully", HttpContext.TraceIdentifier));
-    }
-
-    [Authorize(Policy = JwtExtensions.AssistantPolicy)]
-    [HttpPut("reject-task")]
-    public async Task<IActionResult> RejectTask([FromBody] Request.RejectTaskRequest request)
-    {
-        var result = await _mangaTaskservice.RejectTask(request);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Task Rejected Successfully", HttpContext.TraceIdentifier));
     }
 
     [Authorize(Policy = JwtExtensions.AssistantPolicy)]
