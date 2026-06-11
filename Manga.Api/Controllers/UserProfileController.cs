@@ -22,13 +22,15 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.GetUserListByRole(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list by role Successfully", HttpContext.TraceIdentifier));
     }
+    
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpGet("get-user-list")]
     public async Task<IActionResult> GetUserList()
     {
         var result = await _userProfileService.GetUserList();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list Successfully", HttpContext.TraceIdentifier));
     }
-    
+    [Authorize]
     [HttpGet("get-profile")]
     public async Task<IActionResult> GetProfile()
     {
@@ -41,7 +43,7 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.UpdateProfile(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Update Profile Successfully", HttpContext.TraceIdentifier));
     }
-    [Authorize(policy: JwtExtensions.AdminPolicy)]
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
     [HttpPut("update-user-status")]
     public async Task<IActionResult> UpdateUserStatus([FromQuery] Request.UpdateUserStatusRequest request)
     {

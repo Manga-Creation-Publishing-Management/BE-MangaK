@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260610163726_AddGoogleLogin")]
-    partial class AddGoogleLogin
+    [Migration("20260611035320_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -479,9 +479,6 @@ namespace Manga.Repository.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
-
-                    b.Property<string>("GoogleId")
-                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");

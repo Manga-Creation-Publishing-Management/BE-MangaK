@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Manga.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class Inite : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -262,7 +262,7 @@ namespace Manga.Repository.Migrations
                     TaskDescription = table.Column<string>(type: "character varying(3000)", maxLength: 3000, nullable: false),
                     submittedFileUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Processing"),
-                    Deadline = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    Deadline = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     AssignedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     SubmittedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     ChapterId = table.Column<Guid>(type: "uuid", nullable: false),
