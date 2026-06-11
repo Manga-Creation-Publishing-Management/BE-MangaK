@@ -35,6 +35,7 @@ public class Service : IService
                 AvatarUrl = user.AvatarUrl,
                 Bio = user.Bio,
                 AuthorName = user.AuthorName,
+                Phone = user.Phone,
             })
             .FirstOrDefaultAsync();
 

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Manga.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class MangaTaskController : ControllerBase
 {
     private readonly IService _mangaTaskservice;
