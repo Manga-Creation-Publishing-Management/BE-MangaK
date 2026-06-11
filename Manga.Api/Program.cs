@@ -75,8 +75,6 @@ builder.Services.AddCors(options =>
 });
 
 //AI
-
-
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -84,8 +82,6 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await AppDbContextSeed.SeedAsync(db);
 }
-
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

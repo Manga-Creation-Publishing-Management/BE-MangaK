@@ -35,6 +35,7 @@ public class Service : IService
                 AvatarUrl = user.AvatarUrl,
                 Bio = user.Bio,
                 AuthorName = user.AuthorName,
+                Phone = user.Phone,
             })
             .FirstOrDefaultAsync();
 
@@ -91,7 +92,7 @@ public class Service : IService
                 AvatarUrl = c.AvatarUrl,
                 Bio = c.Bio,
                 AuthorName = c.AuthorName,
-                
+                Role = c.Role,
             })
             .AsNoTracking()
             . ToListAsync();

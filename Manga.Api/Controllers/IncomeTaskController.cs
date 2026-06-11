@@ -3,7 +3,8 @@ using Manga.Service.Model;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
-
+[ApiController]
+[Route("api/[controller]")]
 public class IncomeTaskController : ControllerBase
 { 
     private readonly IService _incomeTaskService;
