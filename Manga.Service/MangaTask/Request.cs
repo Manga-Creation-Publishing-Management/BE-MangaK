@@ -9,12 +9,12 @@ public class Request
     {
         public required Guid SeriesId { get; set; }
         public required string TaskTitle { get; set; }
-        public required string page_range { get; set; }
+        public required string Page_range { get; set; }
         public DateTimeOffset Deadline { get; set; }
 
         public Guid ChapterId { get; set; }
         public Guid AssignedToId { get; set; }
-        public decimal AmountIncome { get; set; } 
+        public decimal AmountIncome { get; set; }
     }
 
     public class GetTaskDetailsRequest
@@ -33,8 +33,8 @@ public class Request
         public Guid TaskId { get; set; }
         public MangaTaskStatus Status { get; set; }
     }
-
-    public class SubmitTaskRequest
+    
+        public class SubmitTaskRequest
     {
         public Guid TaskId { get; set; }
         public required string SubmittedFileUrl { get; set; }
