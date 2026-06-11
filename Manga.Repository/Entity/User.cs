@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Manga.Repository.Abtraction;
 using Manga.Repository.Entity.Enums;
 
@@ -33,8 +33,7 @@ public class User: BaseEntity<Guid>, IAuditableEntity
     public ICollection<PublishingSchedule> DecidedSchedules { get; set; } = new List<PublishingSchedule>();
     //assistant
     public ICollection<MangaTask> AssignedTasks { get; set; } = new List<MangaTask>();
-    //reader
-    public ICollection<ChapterVoting>  ChapterVotings { get; set; } = new List<ChapterVoting>();
+
     //tantou editer
     public ICollection<Series> ReviewedSeries { get; set; } = new List<Series>();
     

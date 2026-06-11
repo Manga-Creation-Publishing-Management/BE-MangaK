@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity;
+using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Leaderboard> Leaderboards { get; set; }
     public DbSet<PublishingSchedule> PublishingSchedules { get; set; }
     public DbSet<UserSession> UserSessions { get; set; }
+    public DbSet<Reader> Readers { get; set; }
 
     public DbSet<Category> Categories { get; set; }
     public DbSet<CategorySeries> CategorySeries { get; set; }
@@ -51,7 +52,6 @@ public class AppDbContext : DbContext
             builder.HasMany(u => u.AssignedTasks).WithOne(t => t.AssignedTo).HasForeignKey(t => t.AssignedToId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.DecidedSchedules).WithOne(p => p.DecidedBy).HasForeignKey(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
         });
@@ -63,6 +63,9 @@ public class AppDbContext : DbContext
             builder.Property(s => s.ExpiresAt).IsRequired();
             builder.Property(s => s.IsRevoked).HasDefaultValue(false);
 
+            builder.ToTable(t => t.HasCheckConstraint("CK_UserSession_Exclusive_User_Or_Reader",
+                "(\"UserId\" IS NULL AND \"ReaderId\" IS NOT NULL) OR (\"UserId\" IS NOT NULL AND \"ReaderId\" IS NULL)"));
+
             builder.HasIndex(s => s.UserId);
             builder.HasIndex(s => s.RefreshToken).IsUnique();
 
@@ -70,6 +73,18 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Reader>(builder =>
+        {
+            builder.Property(r => r.Email).IsRequired().HasMaxLength(128);
+            builder.HasIndex(r => r.Email).IsUnique();
+            builder.Property(r => r.FirstName).HasMaxLength(128);
+            builder.Property(r => r.LastName).HasMaxLength(128);
+            builder.Property(r => r.AvatarUrl).HasMaxLength(500);
+            builder.Property(r => r.GoogleAccountId).HasMaxLength(255);
+            
+            builder.HasMany(r => r.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
         });
         
         modelBuilder.Entity<Series>(builder =>
