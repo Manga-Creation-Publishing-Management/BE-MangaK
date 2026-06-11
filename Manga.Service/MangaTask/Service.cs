@@ -47,6 +47,9 @@ public class Service : IService
         if (assignedAssistant.Role != UserRole.Assistant)
             throw new UnauthorizedAccessException("Task can only be assigned to Assistant");
         
+        var checkAssistant = await _dbContext.MangaTasks.AnyAsync(x => x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id);
+        if (checkAssistant != null) throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
+        
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
             throw new InvalidDataException("Deadline must be a future date.");
@@ -131,7 +134,6 @@ public class Service : IService
 
         return taskDetail;
     }
-
 
 //Cái này e làm luôn chức năng filter theo status luôn nha
     public async Task<List<Response.GetTaskListResponse>> GetTaskList(Request.GetTaskListRequest request)

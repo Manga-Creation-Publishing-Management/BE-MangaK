@@ -18,4 +18,9 @@ public class Request
         public string? Bio { get; set; }
         public string? AuthorName { get; set; }
     }
+    public class UpdateUserStatusRequest
+    {
+        public Guid? UserId { get; set; }
+        public UserStatus Status { get; set; }
+    }
 }

@@ -113,6 +113,26 @@ public class Service : IService
             . ToListAsync();
         return usersList;
     }
+
+    public async Task<Response.GetProfileResponse> UpdateUserStatus(Request.UpdateUserStatusRequest request)
+    {
+        var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == request.UserId);
+        if (user == null || user.IsDeleted) throw new InvalidOperationException("This account not found or was deleted.");
+        user.Status = request.Status;
+        await _dbContext.SaveChangesAsync();
+        return new Response.GetProfileResponse()
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            AvatarUrl = user.AvatarUrl,
+            Bio = user.Bio,
+            AuthorName = user.AuthorName,
+            Phone = user.Phone,
+        };
+    }
+
     private Guid GetUserIdCurrent()
     {
         var userIdStr = _httpContextAccessor.HttpContext?.User.Claims

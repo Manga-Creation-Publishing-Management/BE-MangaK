@@ -41,4 +41,11 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.UpdateProfile(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Update Profile Successfully", HttpContext.TraceIdentifier));
     }
+    [Authorize(policy: JwtExtensions.AdminPolicy)]
+    [HttpPut("update-user-status")]
+    public async Task<IActionResult> UpdateUserStatus([FromQuery] Request.UpdateUserStatusRequest request)
+    {
+        var result = await _userProfileService.UpdateUserStatus(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Update Status Successfully", HttpContext.TraceIdentifier));
+    }
 }
