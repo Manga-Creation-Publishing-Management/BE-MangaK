@@ -34,6 +34,13 @@ public class AuthController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
     }
 
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] Request.LoginByGoogleRequest request)
+    {
+        var result = await _identityService.LoginByGoogle(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Login By Google Successfully!", HttpContext.TraceIdentifier));
+    }
+
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] Request.LogoutRequest request,
         CancellationToken cancellationToken)
