@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Google.Apis.Auth;
 using Manga.Repository.Data;
 using Manga.Repository.Entity;
@@ -149,6 +149,10 @@ public class Service : IService
                 _dbContext.Readers.Add(user); 
                 await _dbContext.SaveChangesAsync();
             }
+            else if (user.Status == UserStatus.Inactive)
+            {
+                throw new UnauthorizedAccessException("Account is inactive.");
+            }
             var claim = new List<Claim>
             {
                 new Claim("UserId", user.Id.ToString()),
@@ -180,6 +184,7 @@ public class Service : IService
                 Email = user.Email,
                 Name = user.Name,
                 Role = "Reader",
+                Status = user.Status,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken
             };

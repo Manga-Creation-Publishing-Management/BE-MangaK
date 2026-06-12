@@ -1,4 +1,4 @@
-using Manga.Repository.Entity;
+﻿using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,6 +73,12 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasIndex(s => s.ReaderId);
+
+            builder.HasOne(s => s.Reader)
+                .WithMany()
+                .HasForeignKey(s => s.ReaderId)
+                .OnDelete(DeleteBehavior.Cascade); 
         });
 
         modelBuilder.Entity<Reader>(builder =>
@@ -82,7 +88,8 @@ public class AppDbContext : DbContext
             builder.Property(r => r.Name).HasMaxLength(128);
             builder.Property(r => r.AvatarUrl).HasMaxLength(500);
             builder.Property(r => r.GoogleAccountId).HasMaxLength(255);
-            
+            builder.Property(u => u.Status).IsRequired().HasConversion<string>().HasMaxLength(50)
+                .HasDefaultValue(UserStatus.Active);
             builder.HasMany(r => r.ChapterVotings).WithOne(v => v.Reader).HasForeignKey(v => v.ReaderId).OnDelete(DeleteBehavior.Restrict);
         });
         

@@ -169,6 +169,7 @@ public class Service: IService
         };
     }
 
+
     public async Task<Response.UpdateChapterResponse> UpdateChapter(Guid seriesId, Guid chapterId, Request.UpdateChapterRequest request)
     {
         var userId = _httpContextAccessor.HttpContext!.User.Claims
