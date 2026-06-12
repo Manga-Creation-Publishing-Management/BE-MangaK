@@ -169,4 +169,73 @@ public class Service: IService
         };
     }
 
+
+    public async Task<Response.UpdateChapterResponse> UpdateChapter(Guid seriesId, Guid chapterId, Request.UpdateChapterRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(userId);
+        
+        var tantou = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        
+        if(tantou == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (tantou.Role != UserRole.Tantou)
+            throw new UnauthorizedAccessException("Only Tantou can update chapter.");
+
+        var chapter = await _dbContext.Chapters.Where(x => x.Id == chapterId && !x.IsDeleted)
+            .Include(s => s.Series)
+            .Include(s => s.MangaTasks.Where(t => !t.IsDeleted))
+            .ThenInclude(t => t.AssignedTo)
+            .FirstOrDefaultAsync();
+        
+        if (chapter == null)
+            throw new KeyNotFoundException("Chapter not found");
+
+        if (request.ChapterFileUrl != null && request.ChapterFileUrl.Length > 0)
+        {
+            var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+            chapter.ChapterFileUrl = uploadResult.FileUrl;
+        }
+        
+        if(request.Status.HasValue)
+            chapter.Status = request.Status.Value;
+        
+        chapter.UpdatedAt = DateTimeOffset.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        var tasks = chapter.MangaTasks
+            .OrderBy(t => t.CreatedAt)
+            .Select(t => new Response.TaskSummary()
+            {
+                MangaTaskId = t.Id,
+                TaskTitle = t.TaskTitle,
+                TaskDescription = t.TaskDescription,
+                Status = t.Status,
+                Deadline = t.Deadline,
+                AssignedTo = $"{t.AssignedTo.FirstName}{t.AssignedTo.LastName}",
+            }).ToList();
+
+        return new Response.UpdateChapterResponse()
+        {
+            ChapterId = chapter.Id,
+            ChapterNumber = chapter.ChapterNumber,
+            Title = chapter.Title,
+            Summary = chapter.Summary,
+            ManuscriptFileUrl = chapter.ManuscriptFileUrl,
+            ChapterFileUrl = chapter.ChapterFileUrl,
+            Status = chapter.Status,
+            SeriesId = chapter.SeriesId,
+            SeriesTitle = chapter.Series.Title,
+            UpdatedByName     = $"{tantou.FirstName} {tantou.LastName}",
+            CreatedAt = chapter.CreatedAt,
+            UpdatedAt = chapter.UpdatedAt,
+            Tasks = tasks
+        };
+    }
 }
