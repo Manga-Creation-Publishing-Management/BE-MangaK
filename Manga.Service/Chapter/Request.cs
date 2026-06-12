@@ -12,4 +12,5 @@ public class Request
         public IFormFile? ManuscriptFileUrl { get; set; }
         public IFormFile? ChapterFileUrl { get; set; }
     }
+
 }

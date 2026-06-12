@@ -1,4 +1,4 @@
-using Manga.Repository.Entity;
+﻿using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,6 +73,12 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasIndex(s => s.ReaderId);
+
+            builder.HasOne(s => s.Reader)
+                .WithMany()
+                .HasForeignKey(s => s.ReaderId)
+                .OnDelete(DeleteBehavior.Cascade); 
         });
 
         modelBuilder.Entity<Reader>(builder =>

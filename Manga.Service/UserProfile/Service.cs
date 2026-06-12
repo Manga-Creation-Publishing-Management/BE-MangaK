@@ -93,6 +93,7 @@ public class Service : IService
                 Bio = c.Bio,
                 AuthorName = c.AuthorName,
                 Role = c.Role,
+                Status =  c.Status,
             })
             .AsNoTracking()
             . ToListAsync();
