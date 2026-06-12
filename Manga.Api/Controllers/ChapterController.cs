@@ -1,5 +1,6 @@
 ﻿using Manga.Service.Chapter;
 using Manga.Service.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
@@ -15,6 +16,7 @@ public class ChapterController: ControllerBase
         _chapterService = chapterService;
     }
     
+    [Authorize]
     [HttpPost("create-chapter")]
     public async Task<IActionResult> CreateChapter(Guid seriesId, [FromForm] Request.CreateChapterRequest request)
     {
@@ -34,5 +36,14 @@ public class ChapterController: ControllerBase
     {
         var result = await _chapterService.GetChapterDetails(seriesId, chapterId);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Chapter Chapter Successfully", HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize]
+    [HttpPatch("{chapterId:guid}")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UpdateChapter(Guid seriesId, Guid chapterId, [FromForm] Request.UpdateChapterRequest request)
+    {
+        var result = await _chapterService.UpdateChapter(seriesId, chapterId, request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Chapter updated successfully.", HttpContext.TraceIdentifier));
     }
 }

@@ -8,7 +8,6 @@ public class Series: BaseEntity<Guid>, IAuditableEntity
     public required string Title { get; set; }
     public required string Description { get; set; }
     public string? CoverFile { get; set; }
-    // public string? CoverFilePublicId { get; set; } 
     public string? NameFile { get; set; }
     public string? NameFilePublicId { get; set; } 
     public SeriesStatus Status { get; set; }

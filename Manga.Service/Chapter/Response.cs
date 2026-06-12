@@ -55,4 +55,20 @@ public class Response
         public string AssignedTo { get; set; } = string.Empty;
     }
     
+    public class UpdateChapterResponse
+    {
+        public Guid ChapterId { get; set; }
+        public int ChapterNumber { get; set; }
+        public required string Title { get; set; }
+        public string? Summary { get; set; }
+        public string? ManuscriptFileUrl { get; set; }
+        public string? ChapterFileUrl { get; set; }  
+        public ChapterStatus Status { get; set; }
+        public Guid SeriesId { get; set; }
+        public string SeriesTitle { get; set; } = string.Empty;
+        public string UpdatedByName { get; set; } = string.Empty;
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public List<TaskSummary> Tasks { get; set; } = new();
+    }
 }
