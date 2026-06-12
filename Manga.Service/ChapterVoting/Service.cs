@@ -21,7 +21,7 @@ public class Service : IService
         var user = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == GetUserCurrentId());
         if (user == null) throw new UnauthorizedAccessException("You must log in");
         var chapterExists =
-            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId && x.Status != ChapterStatus.Publishing);
+            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId || x.Status != ChapterStatus.Publishing);
         if (!chapterExists) throw new KeyNotFoundException("Chapter not found or already published");
 
         if (request.Rate <= 0)
@@ -38,18 +38,18 @@ public class Service : IService
             {
                 Id = Guid.NewGuid(),
                 Rate = request.Rate,
-                VoteAt = DateTimeOffset.Now,
+                VoteAt = DateTimeOffset.UtcNow,
                 ChapterId = request.ChapterId,
                 ReaderId = user.Id,
-                CreatedAt = DateTimeOffset.Now
+                CreatedAt = DateTimeOffset.UtcNow
             };
             _dbContext.ChapterVotings.Add(voting);
         }
         else
         {
             voting.Rate = request.Rate;
-            voting.VoteAt = DateTimeOffset.Now;
-            voting.UpdatedAt = DateTimeOffset.Now;
+            voting.VoteAt = DateTimeOffset.UtcNow;
+            voting.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         await _dbContext.SaveChangesAsync();
