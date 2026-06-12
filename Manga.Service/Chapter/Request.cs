@@ -12,4 +12,10 @@ public class Request
         public IFormFile? ManuscriptFileUrl { get; set; }
         public IFormFile? ChapterFileUrl { get; set; }
     }
+
+    public class UpdateChapterRequest
+    {
+        public ChapterStatus? Status { get; set; }
+        public IFormFile? ChapterFileUrl { get; set; }
+    }
 }
