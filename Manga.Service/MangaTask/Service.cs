@@ -48,7 +48,7 @@ public class Service : IService
             throw new UnauthorizedAccessException("Task can only be assigned to Assistant");
         
         var checkAssistant = await _dbContext.MangaTasks.AnyAsync(x => x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id);
-        if (checkAssistant != null) throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
+        if (checkAssistant) throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
         
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
