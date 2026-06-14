@@ -55,10 +55,10 @@ public class Service : IService
             throw new InvalidDataException("Deadline must be a future date.");
         }
 
-        // if (request.AmountIncome <= 0)
-        // {
-        //     throw new InvalidDataException("Income amount must be greater than zero.");
-        // }
+        if (request.AmountIncome <= 0)
+        {
+            throw new InvalidDataException("Income amount must be greater than zero.");
+        }
         var mangaTask = new Repository.Entity.MangaTask()
         {
             Id = Guid.NewGuid(),
@@ -186,10 +186,11 @@ public class Service : IService
                 AssistantName = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
                 MangakaId = t.CreatedById,
                 MangakaAuthorName = t.CreatedBy.FirstName + " " + t.CreatedBy.LastName,
+                Income = t.Income.Amount,
             }).ToListAsync();
         return taskList;
     }
-    
+
     public async Task<bool> UpdateTaskStatus(Request.UpdateTaskStatusRequest request)
     {
         var userIdGuid = GetCurrentUserId();

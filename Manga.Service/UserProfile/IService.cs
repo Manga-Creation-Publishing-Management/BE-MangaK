@@ -9,4 +9,5 @@ public interface IService
     public Task<List<Response.GetUserListResponse>> GetUserList();
     public Task<List<Response.GetUserListByRoleResponse>> GetUserListByRole(Request.GetUserListByRoleRequest request);
     public Task<Response.GetProfileResponse> UpdateUserStatus(Request.UpdateUserStatusRequest request);
+    public Task<List<Response.GetUserListByRoleResponse>> FilterAssistant(Request.FilterAssistantRequest request);
 }

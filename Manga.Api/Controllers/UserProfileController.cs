@@ -37,6 +37,7 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.GetProfile();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Profile Successfully", HttpContext.TraceIdentifier));
     }
+    [Authorize]
     [HttpPut("update-profile")]
     public async Task<IActionResult> UpdateProfile([FromForm]Request.UpdateProfileRequest request)
     {
@@ -49,5 +50,12 @@ public class UserProfileController : ControllerBase
     {
         var result = await _userProfileService.UpdateUserStatus(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Update Status Successfully", HttpContext.TraceIdentifier));
+    }
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpGet("filter-assistant")]
+    public async Task<IActionResult> FilterAssistant([FromQuery] Request.FilterAssistantRequest request)
+    {
+        var result = await _userProfileService.FilterAssistant(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Filter assistant Successfully", HttpContext.TraceIdentifier));
     }
 }

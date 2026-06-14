@@ -134,6 +134,25 @@ public class Service : IService
         };
     }
 
+    public async Task<List<Response.GetUserListByRoleResponse>> FilterAssistant(Request.FilterAssistantRequest request)
+    {
+        var userId =  GetUserIdCurrent();
+        var userCheck =  await _dbContext.Users.AnyAsync(c => c.Id == userId && !c.IsDeleted && c.Role == UserRole.Mangaka);
+        if (!userCheck) throw new InvalidOperationException("This account not found or was deleted. Or You aren't mangaka");
+
+        var listAssistant = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == UserRole.Assistant
+                                                                           && !_dbContext.MangaTasks.Any(x => x.AssignedToId == c.Id &&
+                                                                               x.ChapterId == request.ChapterId))
+            .Select(u => new Response.GetUserListByRoleResponse()
+            {
+                UserId = u.Id,
+                Email = u.Email,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+            }).ToListAsync();
+        return listAssistant;
+    }
+
     private Guid GetUserIdCurrent()
     {
         var userIdStr = _httpContextAccessor.HttpContext?.User.Claims
