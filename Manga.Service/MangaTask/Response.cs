@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity;
+using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.MangaTask;
@@ -63,7 +63,6 @@ public class Response
     {
         public Guid FeedbackId { get; set; }
         public Guid SenderId { set; get; }
-        public Guid ReceiverId { set; get; }
         public required string Content { set; get; }
         public required DateTimeOffset CreatedAt { set; get; }
     }

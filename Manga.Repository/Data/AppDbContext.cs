@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity;
+using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,9 +51,9 @@ public class AppDbContext : DbContext
             builder.HasMany(u => u.CreatedTasks).WithOne(t => t.CreatedBy).HasForeignKey(t => t.CreatedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.AssignedTasks).WithOne(t => t.AssignedTo).HasForeignKey(t => t.AssignedToId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId).OnDelete(DeleteBehavior.Restrict);
-            builder.HasMany(u => u.ReceivedFeedbacks).WithOne(f => f.Receiver).HasForeignKey(f => f.ReceiverId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.DecidedSchedules).WithOne(p => p.DecidedBy).HasForeignKey(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(u => u.Supervisor).WithMany().HasForeignKey(u => u.SupervisorId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<UserSession>(builder =>

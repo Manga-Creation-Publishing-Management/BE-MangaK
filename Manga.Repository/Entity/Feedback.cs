@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Abtraction;
+using Manga.Repository.Abtraction;
 
 namespace Manga.Repository.Entity;
 
@@ -6,8 +6,6 @@ public class Feedback: BaseEntity<Guid>, IAuditableEntity
 {
     public Guid SenderId { get; set; }
     public User Sender { get; set; } = null;
-    public Guid ReceiverId { get; set; }
-    public User Receiver { get; set; } = null;
     public required string Content { get; set; }
     
     

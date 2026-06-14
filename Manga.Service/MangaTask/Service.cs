@@ -121,7 +121,6 @@ public class Service : IService
                     {
                         FeedbackId = f.Id,
                         SenderId = f.SenderId,
-                        ReceiverId = f.ReceiverId,
                         Content = f.Content,
                         CreatedAt = f.CreatedAt
                     }).ToList(),
@@ -242,7 +241,6 @@ public class Service : IService
             {
                 Id = Guid.NewGuid(),
                 SenderId = userIdGuid,
-                ReceiverId = task.AssignedToId,
                 Content = request.FeedbackContent,
                 CreatedAt = DateTimeOffset.UtcNow,
                 MangaTaskId = task.Id

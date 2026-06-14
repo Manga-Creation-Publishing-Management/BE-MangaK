@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Data;
+using Manga.Repository.Data;
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +36,7 @@ public class Service : IService
                 Bio = user.Bio,
                 AuthorName = user.AuthorName,
                 Phone = user.Phone,
+                SupervisorId = user.SupervisorId
             })
             .FirstOrDefaultAsync();
 
@@ -75,6 +76,7 @@ public class Service : IService
             Bio = user.Bio,
             AuthorName = user.AuthorName,
             Phone = user.Phone,
+            SupervisorId = user.SupervisorId
         };
     }
 
@@ -94,6 +96,7 @@ public class Service : IService
                 AuthorName = c.AuthorName,
                 Role = c.Role,
                 Status =  c.Status,
+                SupervisorId = c.SupervisorId
             })
             .AsNoTracking()
             . ToListAsync();
@@ -131,6 +134,7 @@ public class Service : IService
             Bio = user.Bio,
             AuthorName = user.AuthorName,
             Phone = user.Phone,
+            SupervisorId = user.SupervisorId
         };
     }
 

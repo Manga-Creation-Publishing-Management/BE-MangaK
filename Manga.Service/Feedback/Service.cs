@@ -31,7 +31,6 @@ public class Service : IService
         {
             Id = Guid.NewGuid(),
             SenderId = user.Id,
-            ReceiverId = request.ReceiverId,
             Content = request.Content,
             SeriesId = request.SeriesId,
             ChapterId = request.ChapterId,
