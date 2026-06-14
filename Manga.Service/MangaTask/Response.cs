@@ -22,6 +22,10 @@ public class Response
     public class GetTaskDetailsResponse
     {
         public Guid Id { get; set; }
+        public string SeriesTitle { get; set; }
+        public string ChapterTitle { get; set; }
+        public int ChapterNumber { get; set; }
+        public string ManuscriptFileUrl { get; set; }
         public required string TaskTitle { get; set; }
         public string? TaskDescription { get; set; }
         public string? SubmittedFileUrl { get; set; }

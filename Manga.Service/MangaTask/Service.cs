@@ -103,6 +103,10 @@ public class Service : IService
             .Select(x => new Response.GetTaskDetailsResponse
             {
                 Id = x.Id,
+                SeriesTitle = x.Chapter.Series.Title,
+                ChapterTitle =  x.Chapter.Title,
+                ChapterNumber = x.Chapter.ChapterNumber,
+                ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
                 TaskTitle = x.TaskTitle,
                 TaskDescription = x.TaskDescription,
                 SubmittedFileUrl = x.submittedFileUrl,
@@ -196,7 +200,13 @@ public class Service : IService
         var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.AssignedToId != userIdGuid) throw new UnauthorizedAccessException("You are not assigned to this task");
-        if (task.Status != MangaTaskStatus.Available) throw new InvalidOperationException("Task is not available to be accepted");
+        if (task.Status != MangaTaskStatus.Available) throw new InvalidOperationException("Task is not available to be accepted or updated");
+        
+        if (request.Status != MangaTaskStatus.Processing && request.Status != MangaTaskStatus.Rejected)
+        {
+            throw new InvalidOperationException("You can only Accept (Processing) or Decline (Rejected) an Available task.");
+        }
+
         task.Status = request.Status;
         await _dbContext.SaveChangesAsync();
         return true;

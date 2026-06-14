@@ -49,6 +49,11 @@ public class Service : IService
         }
         query = query.Where(i => i.CreatedAt >= startOfMonth && i.CreatedAt < endOfMonth);
 
+        if (request.Status.HasValue)
+        {
+            query = query.Where(i => i.Status == request.Status.Value);
+        }
+
         var incomes = await query.Select(i => new Response.GetIncomeResponse
             {
                 IncomeId = i.Id,
