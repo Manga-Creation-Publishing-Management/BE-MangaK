@@ -34,9 +34,9 @@ public class Service : IService
             .Include(x => x.Series)
             .FirstOrDefaultAsync(x => x.Id == request.ChapterId);
         if (chapter == null) throw new KeyNotFoundException("You cannot create a task. Chapter can not be found");
-        if (chapter.Series == null || chapter.Series.Status != SeriesStatus.Approved)
+        if (chapter.Series == null || (chapter.Series.Status != SeriesStatus.Approved && chapter.Series.Status != SeriesStatus.Publishing))
         {
-            throw new InvalidDataException("You cannot create a task. Series must be approved");
+            throw new InvalidDataException("You cannot create a task. Series must be approved or publishing");
         }
 
         if (chapter.Status != ChapterStatus.Processing)
@@ -78,6 +78,7 @@ public class Service : IService
                 CreatedAt = DateTimeOffset.UtcNow,
             },
         };
+        chapter.Status = ChapterStatus.Processing;
         _dbContext.Add(mangaTask);
         await _dbContext.SaveChangesAsync();
         return new Response.CreateNewTaskResponse()

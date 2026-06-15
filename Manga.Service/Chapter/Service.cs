@@ -77,7 +77,7 @@ public class Service: IService
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
-            Status = ChapterStatus.Processing,
+            Status = ChapterStatus.Created,
             SeriesId = seriesId,
             CreatedAt = DateTimeOffset.UtcNow
         };
