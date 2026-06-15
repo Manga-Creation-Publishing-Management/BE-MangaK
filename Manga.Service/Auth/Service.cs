@@ -108,6 +108,7 @@ public class Service : IService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone = request.Phone ?? "",
             AuthorName = request.AuthorName ?? "",
+            SupervisorId = request.supervisorId,
             Role = role,
             Verified = true,
             Status = request.Status,

@@ -36,7 +36,7 @@ public class User: BaseEntity<Guid>, IAuditableEntity
 
     //tantou editer
     public ICollection<Series> ReviewedSeries { get; set; } = new List<Series>();
-    
+    public ICollection<User> Mangakas { get; set; } = new List<User>();
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }

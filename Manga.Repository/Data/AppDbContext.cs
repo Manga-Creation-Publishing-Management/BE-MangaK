@@ -53,7 +53,7 @@ public class AppDbContext : DbContext
             builder.HasMany(u => u.SendFeedbacks).WithOne(f => f.Sender).HasForeignKey(f => f.SenderId).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.DecidedSchedules).WithOne(p => p.DecidedBy).HasForeignKey(p => p.DecidedById).OnDelete(DeleteBehavior.Restrict);
             builder.HasMany(u => u.ReviewedSeries).WithOne(s => s.ReviewedBy).HasForeignKey(s => s.ReviewedById).OnDelete(DeleteBehavior.Restrict);
-            builder.HasOne(u => u.Supervisor).WithMany().HasForeignKey(u => u.SupervisorId).OnDelete(DeleteBehavior.SetNull);
+            builder.HasOne(u => u.Supervisor).WithMany(u => u.Mangakas).HasForeignKey(u => u.SupervisorId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<UserSession>(builder =>
