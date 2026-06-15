@@ -22,9 +22,9 @@ public class User: BaseEntity<Guid>, IAuditableEntity
     public bool Verified { get; set; }
     public int VerifiedCode {get; set;}
     public int ResetPasswordCode {get; set;}
-    
+    public Guid? SupervisorId { get; set; }
+    public User? Supervisor { get; set; }
     public ICollection<Feedback>  SendFeedbacks { get; set; } = new List<Feedback>();
-    public ICollection<Feedback> ReceivedFeedbacks { get; set; } = new List<Feedback>();
     //magaka
     public ICollection<Series> CreatedSeries { get; set; } = new List<Series>();
     public ICollection<MangaTask> CreatedTasks { get; set; } = new List<MangaTask>();
@@ -36,7 +36,7 @@ public class User: BaseEntity<Guid>, IAuditableEntity
 
     //tantou editer
     public ICollection<Series> ReviewedSeries { get; set; } = new List<Series>();
-    
+    public ICollection<User> Mangakas { get; set; } = new List<User>();
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }

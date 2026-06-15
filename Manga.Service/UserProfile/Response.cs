@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity.Enums;
+using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.UserProfile;
 
@@ -14,6 +14,7 @@ public class Response
      public string? Bio { get; set; }
      public string? AuthorName { get; set; }
      public string? Phone { get; set; }
+     public Guid? SupervisorId { get; set; }
     }
     public class GetUserListByRoleResponse
     {
@@ -35,5 +36,6 @@ public class Response
         public string AuthorName { get; set; } = string.Empty;
         public UserRole Role { get; set; }
         public UserStatus Status { get; set; }
+        public Guid? SupervisorId { get; set; }
     }
 }

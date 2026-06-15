@@ -23,4 +23,9 @@ public class Request
         public Guid? UserId { get; set; }
         public UserStatus Status { get; set; }
     }
+    public class FilterAssistantRequest
+    {
+        public Guid? MangaId { get; set; }
+        public Guid? ChapterId { get; set; }
+    }
 }

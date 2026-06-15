@@ -108,6 +108,7 @@ public class Service : IService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone = request.Phone ?? "",
             AuthorName = request.AuthorName ?? "",
+            SupervisorId = request.supervisorId,
             Role = role,
             Verified = true,
             Status = request.Status,
@@ -182,7 +183,7 @@ public class Service : IService
             {
                 Id = user.Id,
                 Email = user.Email,
-                Name = user.Name,
+                Name = user.Name ?? string.Empty,
                 Role = "Reader",
                 Status = user.Status,
                 AccessToken = accessToken,
@@ -217,15 +218,12 @@ public class Service : IService
             throw new UnauthorizedAccessException("Access denied. Your session is invalid or has expired.");
         }
 
-        var user = session.User;
         session.IsRevoked = true;
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         var newSession = new UserSession
         {
             Id = Guid.NewGuid(),
-            UserId = user.Id,
-            User = user,
             DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
             RefreshToken = newRefreshToken,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
@@ -241,7 +239,7 @@ public class Service : IService
             newSession.User = session.User;
 
             claim.AddRange(new[] {
-                new Claim("UserId", session.User.Id.ToString()),
+                new Claim("UserId", session.User!.Id.ToString()),
                 new Claim("Email", session.User.Email),
                 new Claim(ClaimTypes.Role, session.User.Role.ToString())
             });
@@ -260,7 +258,7 @@ public class Service : IService
             newSession.Reader = session.Reader;
 
             claim.AddRange(new[] {
-                new Claim("UserId", session.Reader.Id.ToString()),
+                new Claim("UserId", session.Reader!.Id.ToString()),
                 new Claim("Email", session.Reader.Email),
                 new Claim(ClaimTypes.Role, "Reader")
             });
@@ -269,7 +267,7 @@ public class Service : IService
             {
                 UserId = session.Reader.Id,
                 Email = session.Reader.Email,
-                FirstName = session.Reader.Name, 
+                FirstName = session.Reader.Name ?? string.Empty, 
                 LastName = "",
                 Role = "Reader"
             };
