@@ -19,6 +19,7 @@ using IncomeTaskService = Manga.Service.IncomeTask;
 using GoogleAuthService = Manga.Service.GoogleAuthService;
 using ChapterVotingService = Manga.Service.ChapterVoting;
 using FeedbackService = Manga.Service.Feedback;
+using LeaderboardService = Manga.Service.Leaderboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +52,7 @@ builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
 builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
 builder.Services.AddScoped<MailService.IService, MailService.Service>();
 builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
+builder.Services.AddScoped<LeaderboardService.IService, LeaderboardService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
