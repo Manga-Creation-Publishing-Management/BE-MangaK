@@ -23,9 +23,12 @@ public class Response
     {
         public Guid Id { get; set; }
         public string SeriesTitle { get; set; }
+        public required Guid ChapterId { get; set; }
+        
         public string ChapterTitle { get; set; }
         public int ChapterNumber { get; set; }
         public string ManuscriptFileUrl { get; set; }
+        
         public required string TaskTitle { get; set; }
         public string? TaskDescription { get; set; }
         public string? SubmittedFileUrl { get; set; }
@@ -33,34 +36,13 @@ public class Response
         public DateTimeOffset? Deadline { get; set; }
         public DateTimeOffset? AssignedAt { get; set; }
         public DateTimeOffset? SubmittedAt { get; set; }
-        public required Guid ChapterId { get; set; }
         public Guid CreatedById { get; set; }
         public Guid AssignedToId { get; set; }
-        public decimal? IncomeAmount { get; set; }
-        public List<FeedbackSummaryResponse> Feedback { get; set; } = new();
-    }
-
-    public class GetTaskListResponse
-    {
-        public Guid TaskId { get; set; }
-        public string TaskTitle { get; set; }
-        public string? TaskDescription { get; set; }
-        public MangaTaskStatus Status { get; set; }
-        public DateTimeOffset Deadline { get; set; }
-        public string? SubmittedFileUrl { get; set; }
-
-        public Guid? ChapterId { get; set; }
-        public int ChapterNumber { get; set; }
-        public string ChapterTitle { get; set; }
-
-        public Guid? AssistantId { get; set; }
         public string AssistantName { get; set; }
 
-        public Guid? MangakaId { get; set; }
         public string MangakaAuthorName { get; set; }
-        public Decimal? Income { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset? SubmittedAt { get; set; }
+        public decimal? IncomeAmount { get; set; }
+        public List<FeedbackSummaryResponse>? Feedback { get; set; } = new();
     }
 
     public class FeedbackSummaryResponse

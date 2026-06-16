@@ -1,5 +1,6 @@
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
+using Microsoft.AspNetCore.Http;
 
 namespace Manga.Service.MangaTask;
 
@@ -37,7 +38,7 @@ public class Request
         public class SubmitTaskRequest
     {
         public Guid TaskId { get; set; }
-        public required string SubmittedFileUrl { get; set; }
+        public required IFormFile SubmittedFileUrl { get; set; }
     }
 
     public class ReviewTaskRequest

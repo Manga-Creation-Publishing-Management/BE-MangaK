@@ -34,6 +34,7 @@ public class Service : IService
             .Include(x => x.Series)
             .FirstOrDefaultAsync(x => x.Id == request.ChapterId);
         if (chapter == null) throw new KeyNotFoundException("You cannot create a task. Chapter can not be found");
+        if(chapter.SeriesId != series.Id) throw new InvalidDataException("Chapter does not belong to the specified series.");
         if (chapter.Series == null || (chapter.Series.Status != SeriesStatus.Approved && chapter.Series.Status != SeriesStatus.Publishing))
         {
             throw new InvalidDataException("You cannot create a task. Series must be approved or publishing");
@@ -100,14 +101,17 @@ public class Service : IService
     {
         var userIdGuid = GetCurrentUserId();
         var taskDetail = await _dbContext.MangaTasks
+            .AsNoTracking()
             .Where(x => x.Id == request.TaskId)
             .Select(x => new Response.GetTaskDetailsResponse
             {
                 Id = x.Id,
                 SeriesTitle = x.Chapter.Series.Title,
+                ChapterId = x.ChapterId,
                 ChapterTitle =  x.Chapter.Title,
                 ChapterNumber = x.Chapter.ChapterNumber,
                 ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
+                
                 TaskTitle = x.TaskTitle,
                 TaskDescription = x.TaskDescription,
                 SubmittedFileUrl = x.submittedFileUrl,
@@ -115,9 +119,11 @@ public class Service : IService
                 Deadline = x.Deadline,
                 AssignedAt = x.AssignedAt,
                 SubmittedAt = x.SubmittedAt,
-                ChapterId = x.ChapterId,
+                
                 CreatedById = x.CreatedById,
                 AssignedToId = x.AssignedToId,
+                AssistantName = x.AssignedTo.FirstName + " " + x.AssignedTo.LastName,
+                MangakaAuthorName = x.CreatedBy.FirstName + " " + x.CreatedBy.LastName,
                 IncomeAmount = x.Income.Amount,
 
                 Feedback = x.Feedbacks
@@ -141,7 +147,7 @@ public class Service : IService
     }
 
 //Cái này e làm luôn chức năng filter theo status luôn nha
-    public async Task<List<Response.GetTaskListResponse>> GetTaskList(Request.GetTaskListRequest request)
+    public async Task<List<Response.GetTaskDetailsResponse>> GetTaskList(Request.GetTaskListRequest request)
     {
         var userIdGuid = GetCurrentUserId();
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
@@ -149,7 +155,7 @@ public class Service : IService
         if (user.Role != UserRole.Mangaka && user.Role != UserRole.Assistant)
             throw new UnauthorizedAccessException("You don't have permission to access this action");
 
-        IQueryable<Repository.Entity.MangaTask> query = _dbContext.MangaTasks.AsQueryable();
+        IQueryable<Repository.Entity.MangaTask> query = _dbContext.MangaTasks.AsNoTracking().AsQueryable();
         if (user.Role == UserRole.Assistant)
         {
             query = query.Where(t => t.AssignedToId == userIdGuid);
@@ -171,26 +177,28 @@ public class Service : IService
 
         var taskList = await query
             .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new Response.GetTaskListResponse()
+            .Select(x => new Response.GetTaskDetailsResponse()
             {
-                TaskId = t.Id,
-                TaskTitle = t.TaskTitle,
-                TaskDescription = t.TaskDescription,
-                Status = t.Status,
-                Deadline = t.Deadline,
-                SubmittedFileUrl = t.submittedFileUrl,
-                CreatedAt = t.CreatedAt,
-                SubmittedAt = t.SubmittedAt,
-
-                ChapterId = t.ChapterId,
-                ChapterNumber = t.Chapter.ChapterNumber,
-                ChapterTitle = t.Chapter.Title,
-
-                AssistantId = t.AssignedToId,
-                AssistantName = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
-                MangakaId = t.CreatedById,
-                MangakaAuthorName = t.CreatedBy.FirstName + " " + t.CreatedBy.LastName,
-                Income = t.Income.Amount,
+                Id = x.Id,
+                SeriesTitle = x.Chapter.Series.Title,
+                ChapterId = x.ChapterId,
+                ChapterTitle =  x.Chapter.Title,
+                ChapterNumber = x.Chapter.ChapterNumber,
+                ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
+                
+                TaskTitle = x.TaskTitle,
+                TaskDescription = x.TaskDescription,
+                SubmittedFileUrl = x.submittedFileUrl,
+                Status = x.Status,
+                Deadline = x.Deadline,
+                AssignedAt = x.AssignedAt,
+                SubmittedAt = x.SubmittedAt,
+                
+                CreatedById = x.CreatedById,
+                AssignedToId = x.AssignedToId,
+                AssistantName = x.AssignedTo.FirstName + " " + x.AssignedTo.LastName,
+                MangakaAuthorName = x.CreatedBy.FirstName + " " + x.CreatedBy.LastName,
+                IncomeAmount = x.Income.Amount,
             }).ToListAsync();
         return taskList;
     }
@@ -222,7 +230,13 @@ public class Service : IService
         if (task.Status != MangaTaskStatus.Processing && task.Status != MangaTaskStatus.Revising) 
             throw new InvalidOperationException("Task must be in Processing or Revising status to submit");
 
-        task.submittedFileUrl = request.SubmittedFileUrl;
+        if (request.SubmittedFileUrl == null || request.SubmittedFileUrl.Length <= 0)
+        {
+            throw new InvalidOperationException("You must supply a submitted file ");
+        }
+
+        var submittedFile = await _mediaService.UploadFileAsync(request.SubmittedFileUrl);
+        task.submittedFileUrl = submittedFile.FileUrl;
         task.SubmittedAt = DateTimeOffset.UtcNow;
         task.Status = MangaTaskStatus.Pending;
         await _dbContext.SaveChangesAsync();
