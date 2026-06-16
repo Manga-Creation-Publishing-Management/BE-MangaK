@@ -23,4 +23,8 @@
         <ProjectReference Include="..\Manga.Repository\Manga.Repository.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Leaderboard\" />
+    </ItemGroup>
+
 </Project>

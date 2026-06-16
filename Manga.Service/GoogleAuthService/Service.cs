@@ -1,4 +1,4 @@
-﻿using Google.Apis.Auth;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 
 namespace Manga.Service.GoogleAuthService;
@@ -16,7 +16,7 @@ public class Service : IService
         var clientId = _configuration["GoogleAuthConfig:ClientId"];
         var settings = new GoogleJsonWebSignature.ValidationSettings()
         {
-            Audience = new List<string>(){clientId}
+            Audience = new List<string>(){clientId ?? string.Empty}
         };
         return await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
     }

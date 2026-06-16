@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class FeedbackController : ControllerBase
@@ -14,11 +15,22 @@ public class FeedbackController : ControllerBase
     {
         _feedbackService = feedbackService;
     }
+
     [Authorize]
     [HttpPost("send-feedback")]
     public async Task<IActionResult> SendFeedback([FromBody] Request.SendFeedbackRequest request)
     {
         var result = await _feedbackService.SendFeedback(request);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Send feedback Successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Send feedback Successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize]
+    [HttpGet("get-feedback-list")]
+    public async Task<IActionResult> GetFeedbackList()
+    {
+        var result = await _feedbackService.GetFeedbackList();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get feedback list Successfully",
+            HttpContext.TraceIdentifier));
     }
 }

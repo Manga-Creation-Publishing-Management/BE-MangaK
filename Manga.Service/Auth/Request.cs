@@ -21,7 +21,7 @@ public class Request
         public required string Password { get; set; }
         public string? Phone { get; set; }
         public string? AuthorName { get; set; }
-        public Guid? supervisorId { get; set; }
+        public Guid? SupervisorId { get; set; }
         public UserStatus Status { get; set; }
     }
 

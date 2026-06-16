@@ -1,4 +1,4 @@
-﻿using MailKit.Net.Imap;
+using MailKit.Net.Imap;
 using Manga.Repository.Data;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -46,7 +46,7 @@ public class Service: IService
         if (series.Status != SeriesStatus.Approved)
             throw new InvalidOperationException($"Series must be in approved status. Current status{series.Status}");
 
-        if (series.PublishingSchedule != null && !series.IsDeleted)
+        if (series.PublishingSchedule != null && !series.PublishingSchedule.IsDeleted)
             throw new InvalidOperationException("Publishing Schedule already exists");
         
         if(request.PublishDate <= DateTimeOffset.UtcNow)
@@ -125,7 +125,7 @@ public class Service: IService
                           $"{p.Series.CreatedBy.FirstName}{p.Series.CreatedBy.LastName}",
             PublishDate     = p.PublishDate,
             PublishPeriod   = p.PublishPeriod,
-            DecidedByName   = $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}",
+            DecidedByName   = p.DecidedBy != null ? $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}" : string.Empty,
             CreatedAt       = p.CreatedAt,
             UpdatedAt       = p.UpdatedAt
         }).ToList();    
