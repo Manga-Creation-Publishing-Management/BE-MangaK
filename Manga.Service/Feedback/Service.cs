@@ -47,7 +47,19 @@ public class Service : IService
         var userId = GetUserIdCurrent();
         var  user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (user == null) throw new UnauthorizedAccessException("Unauthorized");
-        throw new NotImplementedException("Not implemented yet");
+        
+        IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks.Where(x => x.SeriesId == request.SeriesId && x.IsDeleted == false);
+        if (request.ChapterId.HasValue)
+        {
+            query = query.Where(x => x.ChapterId == request.ChapterId.Value);
+        }
+
+        if (request.MangaTaskId.HasValue)
+        {
+            query = query.Where(x => x.MangaTaskId == request.MangaTaskId.Value);
+        }
+
+        throw null;
     }
 
     private Guid GetUserIdCurrent()

@@ -1,4 +1,4 @@
-using Manga.Repository.Entity;
+﻿using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.MangaTask;
@@ -48,7 +48,7 @@ public class Response
         public MangaTaskStatus Status { get; set; }
         public DateTimeOffset Deadline { get; set; }
         public string? SubmittedFileUrl { get; set; }
-
+        public String SeriesTitle { get; set; }
         public Guid? ChapterId { get; set; }
         public int ChapterNumber { get; set; }
         public string ChapterTitle { get; set; }

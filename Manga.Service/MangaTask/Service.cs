@@ -181,7 +181,7 @@ public class Service : IService
                 SubmittedFileUrl = t.submittedFileUrl,
                 CreatedAt = t.CreatedAt,
                 SubmittedAt = t.SubmittedAt,
-
+                SeriesTitle = t.Chapter.Series.Title,
                 ChapterId = t.ChapterId,
                 ChapterNumber = t.Chapter.ChapterNumber,
                 ChapterTitle = t.Chapter.Title,
