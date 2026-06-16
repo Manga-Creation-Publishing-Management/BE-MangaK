@@ -130,6 +130,7 @@ public class Service: IService
         var series = await _dbContext.Series
             .Where(s => s.Id == seriesId && !s.IsDeleted)
             .Include(s => s.CreatedBy)
+            .Include(s => s.PublishingSchedule)
             .Include(s => s.CategorySeries)
                 .ThenInclude(cs => cs.Category) 
             .Include(s => s.Chapters.Where(c => !c.IsDeleted))
@@ -159,6 +160,8 @@ public class Service: IService
             NameFile = series.NameFile,
             Status   = series.Status,
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,
+            PublishDate = series.PublishingSchedule?.PublishDate,
+            PublishPeriod = series.PublishingSchedule?.PublishPeriod,
             CreateAt = series.CreatedAt,
             Chapters =  chapters
         };
