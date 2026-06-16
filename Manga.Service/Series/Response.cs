@@ -40,6 +40,8 @@ public class Response
        public string? NameFile { get; set; }
        public SeriesStatus Status { get; set; }
        public string MangakaName { get; set; } = string.Empty;
+       public DateTimeOffset? PublishDate { get; set; }
+       public string? PublishPeriod { get; set; }
        public DateTimeOffset CreateAt { get; set; }
        public List<ChapterSummary> Chapters { get; set; } = new();
     }

@@ -1,4 +1,6 @@
-﻿namespace Manga.Service.Chapter;
+﻿using Manga.Repository.Entity.Enums;
+
+namespace Manga.Service.Chapter;
 
 public interface IService
 {
