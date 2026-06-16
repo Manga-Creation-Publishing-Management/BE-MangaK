@@ -25,7 +25,7 @@ public class Service : IService
 
     public async Task<Response.LoginResponse> Login(Request.LoginRequest request)
     {
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email && x.IsDeleted == false && x.Status == UserStatus.Active);
         if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid email or password");
@@ -108,7 +108,7 @@ public class Service : IService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone = request.Phone ?? "",
             AuthorName = request.AuthorName ?? "",
-            SupervisorId = request.supervisorId,
+            SupervisorId = request.SupervisorId,
             Role = role,
             Verified = true,
             Status = request.Status,
