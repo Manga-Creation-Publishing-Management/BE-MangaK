@@ -3,5 +3,5 @@
 public interface IService
 {
     Task<Response.VoteChapterResponse> VoteChapter(Request.VoteChapterRequest request);
-    
+    Task<List<Response.SeriesRankingResponse>> CalculateChapterVote();
 }
