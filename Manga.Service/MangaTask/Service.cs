@@ -41,7 +41,7 @@ public class Service : IService
         }
 
         if (chapter.Status != ChapterStatus.Processing || chapter.Status != ChapterStatus.Created)
-            throw new InvalidOperationException("You cannot create a task. Chapter status must be Processing status");
+            throw new InvalidOperationException("You cannot create a task. Chapter status must be Processing status or Created status");
 
         var assignedAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.AssignedToId);
         if (assignedAssistant == null) throw new KeyNotFoundException("Assigned assistant not found");
