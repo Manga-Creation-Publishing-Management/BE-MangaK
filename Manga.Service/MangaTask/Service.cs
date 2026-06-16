@@ -40,7 +40,7 @@ public class Service : IService
             throw new InvalidDataException("You cannot create a task. Series must be approved or publishing");
         }
 
-        if (chapter.Status != ChapterStatus.Processing)
+        if (chapter.Status != ChapterStatus.Processing || chapter.Status != ChapterStatus.Created)
             throw new InvalidOperationException("You cannot create a task. Chapter status must be Processing status");
 
         var assignedAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.AssignedToId);
