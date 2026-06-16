@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity;
+using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.MangaTask;
@@ -22,10 +22,10 @@ public class Response
     public class GetTaskDetailsResponse
     {
         public Guid Id { get; set; }
-        public string SeriesTitle { get; set; }
-        public string ChapterTitle { get; set; }
+        public string SeriesTitle { get; set; } = string.Empty;
+        public string ChapterTitle { get; set; } = string.Empty;
         public int ChapterNumber { get; set; }
-        public string ManuscriptFileUrl { get; set; }
+        public string ManuscriptFileUrl { get; set; } = string.Empty;
         public required string TaskTitle { get; set; }
         public string? TaskDescription { get; set; }
         public string? SubmittedFileUrl { get; set; }
@@ -43,21 +43,21 @@ public class Response
     public class GetTaskListResponse
     {
         public Guid TaskId { get; set; }
-        public string TaskTitle { get; set; }
+        public string TaskTitle { get; set; } = string.Empty;
         public string? TaskDescription { get; set; }
         public MangaTaskStatus Status { get; set; }
         public DateTimeOffset Deadline { get; set; }
         public string? SubmittedFileUrl { get; set; }
-        public String SeriesTitle { get; set; }
+        public String SeriesTitle { get; set; } = string.Empty;
         public Guid? ChapterId { get; set; }
         public int ChapterNumber { get; set; }
-        public string ChapterTitle { get; set; }
+        public string ChapterTitle { get; set; } = string.Empty;
 
         public Guid? AssistantId { get; set; }
-        public string AssistantName { get; set; }
+        public string AssistantName { get; set; } = string.Empty;
 
         public Guid? MangakaId { get; set; }
-        public string MangakaAuthorName { get; set; }
+        public string MangakaAuthorName { get; set; } = string.Empty;
         public Decimal? Income { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? SubmittedAt { get; set; }

@@ -90,10 +90,10 @@ public class Service : IService
                 Email = c.Email,
                 FirstName = c.FirstName,
                 LastName = c.LastName,
-                Phone = c.Phone,
-                AvatarUrl = c.AvatarUrl,
-                Bio = c.Bio,
-                AuthorName = c.AuthorName,
+                Phone = c.Phone ?? "",
+                AvatarUrl = c.AvatarUrl ?? "",
+                Bio = c.Bio ?? "",
+                AuthorName = c.AuthorName ?? "",
                 Role = c.Role,
                 Status =  c.Status,
                 SupervisorId = c.SupervisorId
@@ -155,6 +155,53 @@ public class Service : IService
                 LastName = u.LastName,
             }).ToListAsync();
         return listAssistant;
+    }
+
+    public async Task<List<Response.GetUserListResponse>> GetReaderList()
+    {
+        var readers = await _dbContext.Readers
+            .OrderBy(c => c.Name)
+            .Select(c => new Response.GetUserListResponse()
+            {
+                UserId = c.Id,
+                Email = c.Email,
+                FirstName = c.Name ?? "",
+                LastName = "",
+                Phone = "",
+                AvatarUrl = c.AvatarUrl ?? "",
+                Bio = "",
+                AuthorName = "",
+                Role = UserRole.Reader,
+                Status =  c.Status,
+                SupervisorId = null
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        return readers;
+    }
+
+    public async Task<List<Response.GetUserListResponse>> FilterTantouList()
+    {
+        var tantous = await _dbContext.Users
+            .Where(c => !c.IsDeleted && c.Role == UserRole.Tantou && c.Mangakas.Count(m => !m.IsDeleted && m.Role == UserRole.Mangaka) < 3)
+            .OrderBy(c => c.FirstName)
+            .Select(c => new Response.GetUserListResponse()
+            {
+                UserId = c.Id,
+                Email = c.Email,
+                FirstName = c.FirstName,
+                LastName = c.LastName,
+                Phone = c.Phone ?? "",
+                AvatarUrl = c.AvatarUrl ?? "",
+                Bio = c.Bio ?? "",
+                AuthorName = c.AuthorName ?? "",
+                Role = c.Role,
+                Status =  c.Status,
+                SupervisorId = c.SupervisorId
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        return tantous;
     }
 
     private Guid GetUserIdCurrent()

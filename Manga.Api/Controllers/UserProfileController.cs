@@ -1,4 +1,4 @@
-﻿using Manga.Api.extensions;
+using Manga.Api.extensions;
 using Manga.Service.Model;
 using Manga.Service.UserProfile;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +30,22 @@ public class UserProfileController : ControllerBase
         var result = await _userProfileService.GetUserList();
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get user list Successfully", HttpContext.TraceIdentifier));
     }
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("get-reader-list")]
+    public async Task<IActionResult> GetReaderList()
+    {
+        var result = await _userProfileService.GetReaderList();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get reader list Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.AdminPolicy)]
+    [HttpGet("get-tantou-list")]
+    public async Task<IActionResult> GetTantouList()
+    {
+        var result = await _userProfileService.FilterTantouList();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get tantou list Successfully", HttpContext.TraceIdentifier));
+    }
+
     [Authorize]
     [HttpGet("get-profile")]
     public async Task<IActionResult> GetProfile()

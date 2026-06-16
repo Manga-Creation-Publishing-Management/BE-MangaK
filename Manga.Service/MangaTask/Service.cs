@@ -107,7 +107,7 @@ public class Service : IService
                 SeriesTitle = x.Chapter.Series.Title,
                 ChapterTitle =  x.Chapter.Title,
                 ChapterNumber = x.Chapter.ChapterNumber,
-                ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
+                ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl ?? "",
                 TaskTitle = x.TaskTitle,
                 TaskDescription = x.TaskDescription,
                 SubmittedFileUrl = x.submittedFileUrl,
@@ -118,7 +118,7 @@ public class Service : IService
                 ChapterId = x.ChapterId,
                 CreatedById = x.CreatedById,
                 AssignedToId = x.AssignedToId,
-                IncomeAmount = x.Income.Amount,
+                IncomeAmount = x.Income != null ? x.Income.Amount : 0,
 
                 Feedback = x.Feedbacks
                     .OrderBy(f => f.CreatedAt)
@@ -190,7 +190,7 @@ public class Service : IService
                 AssistantName = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
                 MangakaId = t.CreatedById,
                 MangakaAuthorName = t.CreatedBy.FirstName + " " + t.CreatedBy.LastName,
-                Income = t.Income.Amount,
+                Income = t.Income != null ? t.Income.Amount : 0,
             }).ToListAsync();
         return taskList;
     }

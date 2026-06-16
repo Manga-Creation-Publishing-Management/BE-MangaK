@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Entity.Enums;
+using Manga.Repository.Entity.Enums;
 
 namespace Manga.Service.IncomeTask;
 
@@ -11,7 +11,7 @@ public class Response
         public decimal Amount { get; set; }
         public DateTimeOffset? PaidAt { get; set; }
         public IncomeStatus Status { get; set; }
-        public string TaskTitle { get; set; }
+        public string TaskTitle { get; set; } = string.Empty;
     }
     public class GetIncomeHistoryResponse
     {
