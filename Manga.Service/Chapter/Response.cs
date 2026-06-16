@@ -15,6 +15,7 @@ public class Response
         public ChapterStatus Status { get; set; }
         public Guid SeriesId { get; set; }
         public string SeriesTitle { get; set; } = string.Empty;
+        public DateTimeOffset Deadline { get; set; }
         public DateTimeOffset CreateAt { get; set; }
     }
     

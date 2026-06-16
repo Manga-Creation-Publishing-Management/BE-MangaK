@@ -48,7 +48,10 @@ public class Service: IService
         
         if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
             throw new Exception("Series need approved before create chapter");
-
+        
+        if(request.Deadline <= DateTimeOffset.UtcNow)
+            throw new ArgumentException("Deadline must be in the future");
+        
         var lastChapterNumber = await  _dbContext.Chapters.Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .MaxAsync(c => (int?)c.ChapterNumber) ?? 0;
         
@@ -77,8 +80,9 @@ public class Service: IService
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
-            Status = ChapterStatus.Processing,
+            Status = ChapterStatus.Created,
             SeriesId = seriesId,
+            Deadline = request.Deadline,
             CreatedAt = DateTimeOffset.UtcNow
         };
         
@@ -96,6 +100,7 @@ public class Service: IService
             Status = chapter.Status,
             SeriesId = seriesId,
             SeriesTitle = series.Title,
+            Deadline = chapter.Deadline,
             CreateAt = chapter.CreatedAt
         };
 
