@@ -52,7 +52,7 @@ public class MangaTaskController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.AssistantPolicy)]
     [HttpPut("submit-task")]
-    public async Task<IActionResult> SubmitTask([FromBody] Request.SubmitTaskRequest request)
+    public async Task<IActionResult> SubmitTask([FromForm] Request.SubmitTaskRequest request)
     {
         var result = await _mangaTaskservice.SubmitTask(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Task Submitted Successfully", HttpContext.TraceIdentifier));
