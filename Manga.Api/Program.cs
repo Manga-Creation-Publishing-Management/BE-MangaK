@@ -43,11 +43,14 @@ builder.Services.AddScoped<MangaTaskService.IService, MangaTaskService.Service>(
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<IncomeTaskService.IService, IncomeTaskService.Service>();
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
-
 builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
 builder.Services.AddScoped<GoogleAuthService.IService, GoogleAuthService.Service>();
 builder.Services.AddScoped<ChapterVotingService.IService, ChapterVotingService.Service>();
 builder.Services.AddScoped<FeedbackService.IService, FeedbackService.Service>();
+builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
+builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
+builder.Services.AddScoped<MailService.IService, MailService.Service>();
+builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -58,10 +61,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
 
-builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
-builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
-builder.Services.AddScoped<MailService.IService, MailService.Service>();
-builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────

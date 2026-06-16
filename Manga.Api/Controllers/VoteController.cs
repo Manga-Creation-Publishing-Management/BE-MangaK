@@ -23,4 +23,11 @@ public class VoteController : ControllerBase
         var result = await _chapterVotingService.VoteChapter(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Vote Chapter Successfully", HttpContext.TraceIdentifier));
     }
+    
+    [HttpGet("calculate-chapter-vote")]
+    public async Task<IActionResult> CalculateChapterVote()
+    {
+        var result = await _chapterVotingService.CalculateChapterVote();
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Calculate Chapter Vote Successfully", HttpContext.TraceIdentifier));
+    }
 }
