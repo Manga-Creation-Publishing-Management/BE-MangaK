@@ -37,4 +37,5 @@ public class Response
         public List<WeeklyRankingResponse> WeeklyRanking { get; set; } = new();
         public List<MonthlyRankingResponse> MonthlyRanking { get; set; } = new();
     }
+    
 }

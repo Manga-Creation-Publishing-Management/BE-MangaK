@@ -33,6 +33,6 @@ public class Request
     {
         public double MinRate { get; set; } = 0;
         public double MaxRate { get; set; } = 5;
-        public string RakingType { get; set; } = "Weekly";
+        public string RankingType { get; set; } = "Weekly";
     }
 }

@@ -13,5 +13,5 @@ public interface IService
     Task<List<Response.GetAllSeriesResponse>> FilterSeriesByStatus(SeriesStatus status);
     Task<List<Response.GetAllSeriesResponse>> GetAllSeriesByCategory(Request.GetSeriesByCategoryRequest request);
     Task<Response.CancelSeriesResponse> CancelSeries(Guid seriesId, Request.CancelSeriesRequest request);
-    Task<List<Response.GetAllSeriesResponse>> GetSeriesByVoting(int rate);
+    Task<object> SearchSeriesByVoting(Request.SearchSeriesByVotingRequest request);
 }
