@@ -28,4 +28,11 @@ public class Request
     {
         public required string Reason { get; set; }
     }
+
+    public class SearchSeriesByVotingRequest
+    {
+        public double MinRate { get; set; } = 0;
+        public double MaxRate { get; set; } = 5;
+        public string RakingType { get; set; } = "Weekly";
+    }
 }
