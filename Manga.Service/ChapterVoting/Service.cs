@@ -18,11 +18,12 @@ public class Service : IService
 
     public async Task<Response.VoteChapterResponse> VoteChapter(Request.VoteChapterRequest request)
     {
-        var user = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == GetUserCurrentId());
+        var userID = GetUserCurrentId();
+        var user = await _dbContext.Readers.AnyAsync(x => x.Id == userID);
         if (user == null) throw new UnauthorizedAccessException("You must log in");
         var chapterExists =
-            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId || x.Status != ChapterStatus.Publishing);
-        if (!chapterExists) throw new KeyNotFoundException("Chapter not found or already published");
+            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId && x.Status != ChapterStatus.Publishing);
+        if (!chapterExists) throw new KeyNotFoundException("Chapter not found or this is an unpublished chapter");
 
         if (request.Rate <= 0)
         {
@@ -30,7 +31,7 @@ public class Service : IService
         }
 
         var voting = await _dbContext.ChapterVotings
-            .FirstOrDefaultAsync(x => x.ChapterId == request.ChapterId && x.ReaderId == user.Id);
+            .FirstOrDefaultAsync(x => x.ChapterId == request.ChapterId && x.ReaderId == userID);
 
         if (voting == null)
         {
@@ -40,16 +41,24 @@ public class Service : IService
                 Rate = request.Rate,
                 VoteAt = DateTimeOffset.UtcNow,
                 ChapterId = request.ChapterId,
-                ReaderId = user.Id,
+                ReaderId = userID,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             _dbContext.ChapterVotings.Add(voting);
         }
         else
         {
-            voting.Rate = request.Rate;
-            voting.VoteAt = DateTimeOffset.UtcNow;
-            voting.UpdatedAt = DateTimeOffset.UtcNow;
+            if (voting.UpdatedAt == null)
+            {
+                voting.Rate = request.Rate;
+                voting.VoteAt = DateTimeOffset.UtcNow;
+                voting.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+            else
+            {
+                throw new InvalidDataException("You only change vote once");
+            }
+            
         }
 
         await _dbContext.SaveChangesAsync();

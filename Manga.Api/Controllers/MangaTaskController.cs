@@ -65,4 +65,11 @@ public class MangaTaskController : ControllerBase
         var result = await _mangaTaskservice.ReviewTask(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Task Reviewed Successfully", HttpContext.TraceIdentifier));
     }
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpGet("process-task")]
+    public async Task<IActionResult> GetProcessOfChapter([FromQuery] Request.GetTaskListRequest request)
+    {
+        var result = await _mangaTaskservice.GetTotalTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
+    }
 }
