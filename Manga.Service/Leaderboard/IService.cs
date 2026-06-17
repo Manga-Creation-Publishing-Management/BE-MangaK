@@ -2,6 +2,6 @@ namespace Manga.Service.Leaderboard;
 
 public interface IService
 {
-    Task<IEnumerable<Response.LeaderboardResponse>> GetWeeklyLeaderboardAsync();
-    Task<IEnumerable<Response.LeaderboardResponse>> GetMonthlyLeaderboardAsync();
+    Task<IEnumerable<Response.LeaderboardResponse>> GetWeeklyLeaderboard();
+    Task<IEnumerable<Response.LeaderboardResponse>> GetMonthlyLeaderboard();
 }

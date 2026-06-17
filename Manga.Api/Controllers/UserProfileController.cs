@@ -15,7 +15,7 @@ public class UserProfileController : ControllerBase
     {
         _userProfileService = userProfileService;
     }
-
+    [Authorize]
     [HttpGet("get-user-list-by-role")]
     public async Task<IActionResult> GetUserListByRole([FromQuery]Request.GetUserListByRoleRequest request)
     {
