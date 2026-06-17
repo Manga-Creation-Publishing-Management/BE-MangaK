@@ -140,6 +140,7 @@ public class Service: IService
             .Include(c => c.Series)
             .Include(c => c.MangaTasks.Where(t => !t.IsDeleted))
             .ThenInclude(t => t.AssignedTo)
+            .Include(c => c.ChapterVotes)
             .FirstOrDefaultAsync();
 
         if (chapter == null)
@@ -157,6 +158,9 @@ public class Service: IService
                 AssignedTo = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
             }).ToList();
 
+        var totalVotes  = chapter.ChapterVotes.Count;
+        var averageRate = totalVotes > 0 ? Math.Round(chapter.ChapterVotes.Average(v => v.Rate), 2) : 0;
+        
         return new Response.GetChapterDetailsResponse()
         {
             ChapterId = chapter.Id,
@@ -171,7 +175,9 @@ public class Service: IService
             CreatedAt = chapter.CreatedAt,
             Deadline = chapter.Deadline,
             UpdatedAt = chapter.UpdatedAt,
-            Tasks = tasks
+            Tasks = tasks,
+            AverageRate = averageRate,
+            TotalVotes = totalVotes
         };
     }
 
