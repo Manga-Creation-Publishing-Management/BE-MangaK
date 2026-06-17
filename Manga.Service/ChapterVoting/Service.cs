@@ -62,54 +62,86 @@ public class Service : IService
         };
     }
 
-    public async Task<List<Response.SeriesRankingResponse>> CalculateChapterVote()
-    {
-         var now = DateTimeOffset.UtcNow;
+    public async Task<Response.RankingResponse> CalculateChapterVote()
+{
+    var now = DateTimeOffset.UtcNow;
 
-         var seriesList = await _dbContext.Series
-            .Where(s => s.Status == SeriesStatus.Publishing && !s.IsDeleted)
-            .Include(s => s.PublishingSchedule)
-            .Include(s => s.Chapters.Where(c => !c.IsDeleted))
-                .ThenInclude(c => c.ChapterVotes)
-            .ToListAsync();
+    var seriesList = await _dbContext.Series
+        .Where(s => s.Status == SeriesStatus.Publishing && !s.IsDeleted)
+        .Include(s => s.PublishingSchedule)
+        .Include(s => s.Chapters.Where(c => !c.IsDeleted))
+            .ThenInclude(c => c.ChapterVotes)
+        .ToListAsync();
+    
+    var weeklySeries  = seriesList.Where(s => s.PublishingSchedule?.PublishPeriod == "Weekly");
+    var monthlySeries = seriesList.Where(s => s.PublishingSchedule?.PublishPeriod == "Monthly");
 
-        return seriesList
-            .Where(s => s.PublishingSchedule != null)
-            .Select(series =>
+    var weeklyRanking = weeklySeries.Select(series =>
+        {
+            var publishDate = series.PublishingSchedule!.PublishDate;
+            
+            var daysPassed= (now - publishDate).TotalDays;
+            
+            var weeklyPeriodStart = publishDate.AddDays((int)(daysPassed / 7) * 7);
+            
+            var weeklyPeriodEnd   = weeklyPeriodStart.AddDays(7);
+            
+            var weeklyVotes = series.Chapters
+                .SelectMany(c => c.ChapterVotes)
+                .Where(v => v.VoteAt >= weeklyPeriodStart && v.VoteAt < weeklyPeriodEnd)
+                .ToList();
+
+            return new Response.WeeklyRankingResponse
             {
-                var publishDate = series.PublishingSchedule!.PublishDate;
-                var daysPassed= (now - publishDate).TotalDays;
+                SeriesId          = series.Id,
+                Title             = series.Title,
+                CoverFile         = series.CoverFile,
+                WeeklyAverageRate = weeklyVotes.Count > 0 ? Math.Round(weeklyVotes.Average(v => v.Rate), 2) : 0,
+                WeeklyTotalVotes  = weeklyVotes.Count,
+                WeeklyPeriodStart = weeklyPeriodStart,
+                WeeklyPeriodEnd   = weeklyPeriodEnd,
+            };
+        })
+        .OrderByDescending(r => r.WeeklyAverageRate)
+        .ThenByDescending(r => r.WeeklyTotalVotes)
+        .ToList();
 
-                var weeklyPeriodStart  = publishDate.AddDays((int)(daysPassed / 7)  * 7);
-                var weeklyPeriodEnd    = weeklyPeriodStart.AddDays(7);
-                var monthlyPeriodStart = publishDate.AddDays((int)(daysPassed / 30) * 30);
-                var monthlyPeriodEnd   = monthlyPeriodStart.AddDays(30);
+    var monthlyRanking = monthlySeries.Select(series =>
+        {
+            var publishDate        = series.PublishingSchedule!.PublishDate;
+            
+            var daysPassed         = (now - publishDate).TotalDays;
+            
+            var monthlyPeriodStart = publishDate.AddDays((int)(daysPassed / 30) * 30);
+            
+            var monthlyPeriodEnd   = monthlyPeriodStart.AddDays(30);
 
-                var allVotes     = series.Chapters.SelectMany(c => c.ChapterVotes).ToList();
-                var weeklyVotes  = allVotes.Where(v => v.VoteAt >= weeklyPeriodStart  && v.VoteAt < weeklyPeriodEnd).ToList();
-                var monthlyVotes = allVotes.Where(v => v.VoteAt >= monthlyPeriodStart && v.VoteAt < monthlyPeriodEnd).ToList();
+            var monthlyVotes = series.Chapters
+                .SelectMany(c => c.ChapterVotes)
+                .Where(v => v.VoteAt >= monthlyPeriodStart && v.VoteAt < monthlyPeriodEnd)
+                .ToList();
 
-                return new Response.SeriesRankingResponse
-                {
-                    SeriesId  = series.Id,
-                    Title     = series.Title,
-                    CoverFile = series.CoverFile,
+            return new Response.MonthlyRankingResponse
+            {
+                SeriesId           = series.Id,
+                Title              = series.Title,
+                CoverFile          = series.CoverFile,
+                MonthlyAverageRate = monthlyVotes.Count > 0 ? Math.Round(monthlyVotes.Average(v => v.Rate), 2) : 0,
+                MonthlyTotalVotes  = monthlyVotes.Count,
+                MonthlyPeriodStart = monthlyPeriodStart,
+                MonthlyPeriodEnd   = monthlyPeriodEnd,
+            };
+        })
+        .OrderByDescending(r => r.MonthlyAverageRate)
+        .ThenByDescending(r => r.MonthlyTotalVotes)
+        .ToList();
 
-                    WeeklyAverageRate  = weeklyVotes.Count  > 0 ? Math.Round(weeklyVotes.Average(v  => v.Rate), 2) : 0,
-                    WeeklyTotalVotes   = weeklyVotes.Count,
-                    WeeklyPeriodStart  = weeklyPeriodStart,
-                    WeeklyPeriodEnd    = weeklyPeriodEnd,
-
-                    MonthlyAverageRate = monthlyVotes.Count > 0 ? Math.Round(monthlyVotes.Average(v => v.Rate), 2) : 0,
-                    MonthlyTotalVotes  = monthlyVotes.Count,
-                    MonthlyPeriodStart = monthlyPeriodStart,
-                    MonthlyPeriodEnd   = monthlyPeriodEnd,
-                };
-            })
-            .OrderByDescending(r => r.WeeklyAverageRate)
-            .ThenByDescending(r => r.WeeklyTotalVotes)
-            .ToList();
-    }
+    return new Response.RankingResponse
+    {
+        WeeklyRanking  = weeklyRanking,
+        MonthlyRanking = monthlyRanking,
+    };
+}
 
 
     private Guid GetUserCurrentId()
