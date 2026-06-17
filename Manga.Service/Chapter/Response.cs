@@ -43,6 +43,7 @@ public class Response
         public string SeriesTitle { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset? Deadline { get; set; }
         public List<TaskSummary> Tasks { get; set; } = new();
     }
     
