@@ -423,4 +423,9 @@ public class Service: IService
             CancelledAt     = series.UpdatedAt!.Value
         };
     }
+
+    public Task<List<Response.GetAllSeriesResponse>> GetSeriesByVoting(int rate)
+    {
+        throw new NotImplementedException();
+    }
 }
