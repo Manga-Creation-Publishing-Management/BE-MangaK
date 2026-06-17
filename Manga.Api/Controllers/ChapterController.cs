@@ -35,7 +35,7 @@ public class ChapterController: ControllerBase
     public async Task<IActionResult> GetChapterDetail(Guid seriesId, Guid chapterId)
     {
         var result = await _chapterService.GetChapterDetails(seriesId, chapterId);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Chapter Chapter Successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Chapter Detail Successfully", HttpContext.TraceIdentifier));
     }
     
     [Authorize]

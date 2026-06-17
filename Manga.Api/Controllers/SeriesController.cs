@@ -87,4 +87,11 @@ public class SeriesController: ControllerBase
            "Series cancelled successfully.",
            HttpContext.TraceIdentifier));
    }
+   
+   [HttpGet("search-series-by-voting")]
+   public async Task<IActionResult> SearchSeriesByVoting([FromQuery] Request.SearchSeriesByVotingRequest request)
+   {
+       var result = await _seriesService.SearchSeriesByVoting(request);
+       return Ok(ApiResponseFactory.SuccessResponse(result, "Search Series By Voting Successfully", HttpContext.TraceIdentifier));
+   }
 }

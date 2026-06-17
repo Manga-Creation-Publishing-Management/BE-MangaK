@@ -423,4 +423,100 @@ public class Service: IService
             CancelledAt     = series.UpdatedAt!.Value
         };
     }
+
+    public async Task<object> SearchSeriesByVoting(Request.SearchSeriesByVotingRequest request)
+    {
+        if (request.MinRate < 0 || request.MaxRate > 5 || request.MinRate > request.MaxRate)
+            throw new ArgumentException(
+                "MinRate must be 0-5, MaxRate must be 0-5 and MinRate cannot be greater than MaxRate");
+        
+        var now = DateTimeOffset.UtcNow;
+        
+        var seriesList = await _dbContext.Series
+            .Where(s => s.Status == SeriesStatus.Publishing && !s.IsDeleted)
+            .Include(s => s.PublishingSchedule)
+            .Include(s => s.Chapters.Where(c => !c.IsDeleted))
+            .ThenInclude(c => c.ChapterVotes)
+            .ToListAsync();
+        
+        if (request.RankingType == "Weekly")
+            return GetWeeklyRanking(seriesList, now, request.MinRate, request.MaxRate);
+
+        if (request.RankingType == "Monthly")
+            return GetMonthlyRanking(seriesList, now, request.MinRate, request.MaxRate);
+
+        // Both là cả weekly và monthly
+        return new Response.SearchSeriesByVotingResponse
+        {
+            WeeklyRanking  = GetWeeklyRanking(seriesList, now, request.MinRate, request.MaxRate),
+            MonthlyRanking = GetMonthlyRanking(seriesList, now, request.MinRate, request.MaxRate),
+        };
+    }
+    
+    private List<ChapterVoting.Response.WeeklyRankingResponse> GetWeeklyRanking(
+        List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
+    {
+        return seriesList
+            .Where(s => s.PublishingSchedule?.PublishPeriod == "Weekly")
+            .Select(series =>
+            {
+                var publishDate       = series.PublishingSchedule!.PublishDate;
+                var daysPassed        = (now - publishDate).TotalDays;
+                var weeklyPeriodStart = publishDate.AddDays((int)(daysPassed / 7) * 7);
+                var weeklyPeriodEnd   = weeklyPeriodStart.AddDays(7);
+
+                var weeklyVotes = series.Chapters
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v => v.VoteAt >= weeklyPeriodStart && v.VoteAt < weeklyPeriodEnd)
+                    .ToList();
+
+                return new ChapterVoting.Response.WeeklyRankingResponse
+                {
+                    SeriesId          = series.Id,
+                    Title             = series.Title,
+                    CoverFile         = series.CoverFile,
+                    WeeklyAverageRate = weeklyVotes.Count > 0 ? Math.Round(weeklyVotes.Average(v => v.Rate), 2) : 0,
+                    WeeklyTotalVotes  = weeklyVotes.Count,
+                    WeeklyPeriodStart = weeklyPeriodStart,
+                    WeeklyPeriodEnd   = weeklyPeriodEnd,
+                };
+            }).Where(r => r.WeeklyAverageRate >= minRate && r.WeeklyAverageRate <= maxRate)
+            .OrderByDescending(r => r.WeeklyAverageRate)
+            .ThenByDescending(r => r.WeeklyTotalVotes)
+            .ToList();
+    }
+
+    private List<ChapterVoting.Response.MonthlyRankingResponse> GetMonthlyRanking(
+         List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
+    {
+        return seriesList
+            .Where(s => s.PublishingSchedule?.PublishPeriod == "Monthly")
+            .Select(series =>
+            {
+                var publishDate        = series.PublishingSchedule!.PublishDate;
+                var daysPassed         = (now - publishDate).TotalDays;
+                var monthlyPeriodStart = publishDate.AddDays((int)(daysPassed / 30) * 30);
+                var monthlyPeriodEnd   = monthlyPeriodStart.AddDays(30);
+
+                var monthlyVotes = series.Chapters
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v => v.VoteAt >= monthlyPeriodStart && v.VoteAt < monthlyPeriodEnd)
+                    .ToList();
+
+                return new ChapterVoting.Response.MonthlyRankingResponse
+                {
+                    SeriesId           = series.Id,
+                    Title              = series.Title,
+                    CoverFile          = series.CoverFile,
+                    MonthlyAverageRate = monthlyVotes.Count > 0 ? Math.Round(monthlyVotes.Average(v => v.Rate), 2) : 0,
+                    MonthlyTotalVotes  = monthlyVotes.Count,
+                    MonthlyPeriodStart = monthlyPeriodStart,
+                    MonthlyPeriodEnd   = monthlyPeriodEnd,
+                };
+            })
+            .Where(r => r.MonthlyAverageRate >= minRate && r.MonthlyAverageRate <= maxRate)
+            .OrderByDescending(r => r.MonthlyAverageRate)
+            .ThenByDescending(r => r.MonthlyTotalVotes)
+            .ToList();
+    }
 }

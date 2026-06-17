@@ -77,4 +77,10 @@ public class Response
         public string CancelledByName { get; set; } = string.Empty;
         public DateTimeOffset CancelledAt { get; set; }
     }
+
+    public class SearchSeriesByVotingResponse
+    {
+        public List<ChapterVoting.Response.WeeklyRankingResponse> WeeklyRanking { get; set; } = new();
+        public List<ChapterVoting.Response.MonthlyRankingResponse> MonthlyRanking { get; set; } = new();
+    }
 }
