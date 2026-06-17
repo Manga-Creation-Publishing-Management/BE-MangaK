@@ -25,8 +25,7 @@ public class MangaTaskController : ControllerBase
         var result = await _mangaTaskservice.CreateNewTask(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create Task Successfully", HttpContext.TraceIdentifier));
     }
-    // [Authorize(Policy = JwtExtensions.MangakaPolicy) ]
-    // [Authorize(Policy = JwtExtensions.AssistantPolicy)]
+    [Authorize]
     [HttpGet("get-tasks-details")]
     public async Task<IActionResult> GetTaskDetails([FromQuery] Request.GetTaskDetailsRequest request)
     {
@@ -34,6 +33,7 @@ public class MangaTaskController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Task Details Successfully",
             HttpContext.TraceIdentifier));
     }
+    [Authorize]
     [HttpGet("get-tasks-list")]
     public async Task<IActionResult> GetTaskList([FromQuery] Request.GetTaskListRequest request)
     {
