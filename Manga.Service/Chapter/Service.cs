@@ -169,6 +169,7 @@ public class Service: IService
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
             CreatedAt = chapter.CreatedAt,
+            Deadline = chapter.Deadline,
             UpdatedAt = chapter.UpdatedAt,
             Tasks = tasks
         };
