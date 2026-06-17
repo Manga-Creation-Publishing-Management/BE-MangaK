@@ -40,7 +40,7 @@ public class Service : IService
             throw new InvalidDataException("You cannot create a task. Series must be approved or publishing");
         }
 
-        if (chapter.Status != ChapterStatus.Processing || chapter.Status != ChapterStatus.Created)
+        if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Created)
             throw new InvalidOperationException("You cannot create a task. Chapter status must be Processing status or Created status");
 
         var assignedAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.AssignedToId);
@@ -276,6 +276,22 @@ public class Service : IService
         await _dbContext.SaveChangesAsync();
         return true;
     }
+
+    public async Task<Response.GetTotalTaskResponse> GetTotalTask(Request.GetTaskListRequest request)
+    {
+        var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId);
+        if (!chapterExists) throw new KeyNotFoundException("Chapter not found");
+
+        var total  = await _dbContext.MangaTasks.Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false).CountAsync();
+        var checkStatus  = await _dbContext.MangaTasks.Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false && x.Status == request.Status).CountAsync();
+
+        return new Response.GetTotalTaskResponse()
+        {
+            Total = total,
+            NumberOfStatus = checkStatus
+        };
+    }
+    
 
     private Guid GetCurrentUserId()
     {

@@ -52,4 +52,9 @@ public class Response
         public required string Content { set; get; }
         public required DateTimeOffset CreatedAt { set; get; }
     }
+    public class GetTotalTaskResponse
+    {
+        public int Total { get; set; }
+        public int NumberOfStatus { get; set; }
+    }
 }
