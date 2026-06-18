@@ -22,7 +22,7 @@ public class Service : IService
         var user = await _dbContext.Readers.AnyAsync(x => x.Id == userID);
         if (user == null) throw new UnauthorizedAccessException("You must log in");
         var chapterExists =
-            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId && x.Status != ChapterStatus.Publishing);
+            await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId && x.Status == ChapterStatus.Publishing);
         if (!chapterExists) throw new KeyNotFoundException("Chapter not found or this is an unpublished chapter");
 
         if (request.Rate <= 0)
