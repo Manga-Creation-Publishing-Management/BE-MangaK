@@ -227,17 +227,19 @@ public class Service : IService
         var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.AssignedToId != userIdGuid) throw new UnauthorizedAccessException("You are not assigned to this task");
-        if (task.Status != MangaTaskStatus.Processing && task.Status != MangaTaskStatus.Revising) 
-            throw new InvalidOperationException("Task must be in Processing or Revising status to submit");
+        if (task.Status != MangaTaskStatus.Processing && task.Status != MangaTaskStatus.Revising && task.Status != MangaTaskStatus.Pending) 
+            throw new InvalidOperationException("Task can't be submitted.");
 
         if (request.SubmittedFileUrl == null || request.SubmittedFileUrl.Length <= 0)
         {
             throw new InvalidOperationException("You must supply a submitted file ");
         }
-
+        var currentDate = DateTimeOffset.UtcNow;
+        if(currentDate > task.Deadline) throw new  InvalidOperationException("The deadline for this task has passed.");
+        
         var submittedFile = await _mediaService.UploadFileAsync(request.SubmittedFileUrl);
         task.submittedFileUrl = submittedFile.FileUrl;
-        task.SubmittedAt = DateTimeOffset.UtcNow;
+        task.SubmittedAt = currentDate;
         task.Status = MangaTaskStatus.Pending;
         await _dbContext.SaveChangesAsync();
         return true;
