@@ -186,13 +186,13 @@ public class Service: IService
         
         var userIdGuid = Guid.Parse(userId);
         
-        var tantou = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
         
-        if(tantou == null)
+        if(user == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (tantou.Role != UserRole.Tantou)
-            throw new UnauthorizedAccessException("Only Tantou can update chapter.");
+        if (user.Role != UserRole.Mangaka && user.Role != UserRole.Tantou)
+            throw new UnauthorizedAccessException("Only Mangaka or Tantou can update chapter");
 
         var chapter = await _dbContext.Chapters.Where(x => x.Id == chapterId && !x.IsDeleted)
             .Include(s => s.Series)
@@ -203,14 +203,42 @@ public class Service: IService
         if (chapter == null)
             throw new KeyNotFoundException("Chapter not found");
 
-        if (request.ChapterFileUrl != null && request.ChapterFileUrl.Length > 0)
+        if (user.Role == UserRole.Mangaka)
         {
+            if (chapter.Series.CreatedById != userIdGuid)
+                throw new UnauthorizedAccessException("You are not the creator of this series");
+
+            if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
+                throw new ArgumentException("Chapter file is required to submit");
+
+            if (chapter.Status != ChapterStatus.Created && chapter.Status != ChapterStatus.Rejected)
+                throw new InvalidOperationException("Chapter can only be submitted when status is Created or Rejected");
+
             var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
             chapter.ChapterFileUrl = uploadResult.FileUrl;
+            chapter.Status = ChapterStatus.Pending;
         }
-        
-        if(request.Status.HasValue)
+        else if (user.Role == UserRole.Tantou)
+        {
+            if (!request.Status.HasValue)
+                throw new ArgumentException("Status is required");
+
+            if (chapter.Status == ChapterStatus.Pending)
+            {
+                if (request.Status.Value != ChapterStatus.Approved && 
+                    request.Status.Value != ChapterStatus.Rejected &&
+                    request.Status.Value != ChapterStatus.Publishing)
+                    throw new ArgumentException("Tantou can only set status to Approved, Rejected and Publishing when chapter is Pending");
+            }
+            
+            if (chapter.Status == ChapterStatus.Approved)
+            {
+                if (request.Status.Value != ChapterStatus.Publishing)
+                    throw new ArgumentException("Tantou can only set status to Publishing when chapter is Approved");
+            }
+            
             chapter.Status = request.Status.Value;
+        }
         
         chapter.UpdatedAt = DateTimeOffset.UtcNow;
         await _dbContext.SaveChangesAsync();
@@ -238,7 +266,7 @@ public class Service: IService
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
-            UpdatedByName     = $"{tantou.FirstName} {tantou.LastName}",
+            UpdatedByName     = $"{user.FirstName} {user.LastName}",
             CreatedAt = chapter.CreatedAt,
             UpdatedAt = chapter.UpdatedAt,
             Tasks = tasks
