@@ -211,8 +211,8 @@ public class Service: IService
             if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
                 throw new ArgumentException("Chapter file is required to submit");
 
-            if (chapter.Status != ChapterStatus.Created && chapter.Status != ChapterStatus.Rejected)
-                throw new InvalidOperationException("Chapter can only be submitted when status is Created or Rejected");
+            if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
+                throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
 
             var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
             chapter.ChapterFileUrl = uploadResult.FileUrl;
@@ -223,18 +223,15 @@ public class Service: IService
             if (!request.Status.HasValue)
                 throw new ArgumentException("Status is required");
 
+            if (chapter.Series.Status != SeriesStatus.Publishing)
+                throw new ArgumentException("Tantou can only set status to Publishing when series is Publishing");
+            
+            
             if (chapter.Status == ChapterStatus.Pending)
             {
-                if (request.Status.Value != ChapterStatus.Approved && 
-                    request.Status.Value != ChapterStatus.Rejected &&
+                if (request.Status.Value != ChapterStatus.Rejected &&
                     request.Status.Value != ChapterStatus.Publishing)
-                    throw new ArgumentException("Tantou can only set status to Approved, Rejected and Publishing when chapter is Pending");
-            }
-            
-            if (chapter.Status == ChapterStatus.Approved)
-            {
-                if (request.Status.Value != ChapterStatus.Publishing)
-                    throw new ArgumentException("Tantou can only set status to Publishing when chapter is Approved");
+                    throw new ArgumentException("Tantou can only set status to Rejected and Publishing when chapter is Pending");
             }
             
             chapter.Status = request.Status.Value;
