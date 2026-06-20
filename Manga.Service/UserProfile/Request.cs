@@ -21,6 +21,7 @@ public class Request
     public class UpdateUserStatusRequest
     {
         public Guid? UserId { get; set; }
+        public Guid? SupervisorId { get; set; }
         public UserStatus Status { get; set; }
     }
     public class FilterAssistantRequest

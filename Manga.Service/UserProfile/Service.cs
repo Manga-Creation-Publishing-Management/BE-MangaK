@@ -55,8 +55,8 @@ public class Service : IService
             throw new UnauthorizedAccessException("Account disabled or does not exist");
         user.FirstName = !string.IsNullOrWhiteSpace(request.FirstName) ? request.FirstName : user.FirstName;
         user.LastName = !string.IsNullOrWhiteSpace(request.LastName) ? request.LastName : user.LastName;
-        user.AuthorName = !string.IsNullOrWhiteSpace(request.AuthorName) ? request.AuthorName : user.AuthorName;
-        user.Phone = !string.IsNullOrWhiteSpace(request.Phone) ? request.Phone : user.Phone;
+        user.AuthorName = request.AuthorName;
+        user.Phone = request.Phone;
 
         user.Bio = !string.IsNullOrWhiteSpace(request.Bio) ? request.Bio : user.Bio;
         if (request.AvatarFile != null && request.AvatarFile.Length > 0)
@@ -122,7 +122,18 @@ public class Service : IService
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == request.UserId);
         if (user == null || user.IsDeleted) throw new InvalidOperationException("This account not found or was deleted.");
-        user.Status = request.Status;
+        if (request.SupervisorId.HasValue)
+        {
+            var checkSupervisorExist =  await _dbContext.Users.AnyAsync(c => c.Id == request.SupervisorId && c.Role == UserRole.Tantou && !c.IsDeleted);
+            if(!checkSupervisorExist) throw new InvalidOperationException("This tantou account  not found or was deleted. Or this account isn't tantou");
+            user.SupervisorId = request.SupervisorId.Value;
+        }
+        else
+        {
+            user.SupervisorId = null;
+        }
+
+        user.Status = request.Status;   
         await _dbContext.SaveChangesAsync();
         return new Response.GetProfileResponse()
         {
