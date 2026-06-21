@@ -38,7 +38,10 @@ public class Service: IService
         if (mangakaUser.Role != UserRole.Mangaka)
             throw new UnauthorizedAccessException("Only Mangaka can create chapter");
 
-        var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == seriesId);
+        //
+        var series = await _dbContext.Series
+            .Include(s => s.PublishingSchedule)
+            .FirstOrDefaultAsync(x => x.Id == seriesId);
 
         if (series == null)
             throw new KeyNotFoundException("Series not found");
@@ -46,16 +49,23 @@ public class Service: IService
         if (series.CreatedById != userIdGuid)
             throw new UnauthorizedAccessException("You are not the creator for series");
         
-        if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
-            throw new Exception("Series need approved before create chapter");
+        //
+        if(series.Status != SeriesStatus.Publishing)
+            throw new Exception("Series need publising before create chapter");
         
-        if(request.Deadline <= DateTimeOffset.UtcNow)
-            throw new ArgumentException("Deadline must be in the future");
+        // if(request.Deadline <= DateTimeOffset.UtcNow)
+        //     throw new ArgumentException("Deadline must be in the future");
         
         var lastChapterNumber = await  _dbContext.Chapters.Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .MaxAsync(c => (int?)c.ChapterNumber) ?? 0;
         
         var nextChapterNumber = lastChapterNumber + 1;
+        
+        //
+        var deadline = Deadline.DeadlineCalculator.CalculateDeadline(
+            series.PublishingSchedule!.PublishDate,
+            series.PublishingSchedule.PublishPeriod,
+            nextChapterNumber);
         
         string? manuscriptFileUrl = null;
         string? chapterFileUrl = null;
@@ -82,7 +92,7 @@ public class Service: IService
             ChapterFileUrl = chapterFileUrl,
             Status = ChapterStatus.Created,
             SeriesId = seriesId,
-            Deadline = request.Deadline,
+            Deadline = deadline,
             CreatedAt = DateTimeOffset.UtcNow
         };
         
@@ -237,6 +247,25 @@ public class Service: IService
         }
         
         chapter.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        if (!string.IsNullOrWhiteSpace(request.Feedback))
+        {
+            var feedback = new Repository.Entity.Feedback()
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = user.Id,
+                Content   = request.Feedback,
+                SeriesId  = chapter.SeriesId,
+                ChapterId = chapter.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        
         await _dbContext.SaveChangesAsync();
 
         var tasks = chapter.MangaTasks
@@ -262,7 +291,9 @@ public class Service: IService
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
-            UpdatedByName     = $"{user.FirstName} {user.LastName}",
+            UpdatedByName = $"{user.FirstName} {user.LastName}",
+            Feedback = request.Feedback,//
+            FeedbackCreated   = feedbackCreated,//
             CreatedAt = chapter.CreatedAt,
             UpdatedAt = chapter.UpdatedAt,
             Tasks = tasks

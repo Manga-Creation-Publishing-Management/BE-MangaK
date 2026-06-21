@@ -51,6 +51,8 @@ public class Service: IService
         
         if(request.PublishDate <= DateTimeOffset.UtcNow)
             throw new ArgumentException("Publish date must be in the future");
+ 
+        Deadline.DeadlineCalculator.ValidatePublishDate(request.PublishDate, request.PublishPeriod);
 
         var schedule = new Repository.Entity.PublishingSchedule
         {
@@ -154,6 +156,8 @@ public class Service: IService
                 .Where(p => p.Id == scheduleId)
                 .Include(p => p.Series)
                 .ThenInclude(s => s.CreatedBy)
+                .Include(p => p.Series)
+                .ThenInclude(s => s.Chapters.Where(c => !c.IsDeleted))
                 .Include(p => p.DecidedBy)
                 .OrderBy(p => p.PublishDate)
                 .FirstOrDefaultAsync();
@@ -164,6 +168,12 @@ public class Service: IService
         if(schedule.Series.Status != SeriesStatus.Publishing)
             throw new InvalidOperationException($"Series must be in publishing status. Current status{schedule.Series.Status}");
         
+        var newPublishPeriod = request.PublishPeriod ?? schedule.PublishPeriod;
+        
+        Deadline.DeadlineCalculator.ValidatePublishDate(request.PublishDate, newPublishPeriod);
+        
+        schedule.PublishDate = request.PublishDate;
+        
         if(request.PublishDate <= DateTimeOffset.UtcNow)
             throw new ArgumentException("Publish must be in the future");
 
@@ -173,8 +183,25 @@ public class Service: IService
             schedule.PublishPeriod = request.PublishPeriod;
         
         schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
         await _dbContext.SaveChangesAsync();
 
+        var chaptersToRecalculate = schedule.Series.Chapters
+            .Where(c => c.Status == ChapterStatus.Created || c.Status == ChapterStatus.Processing)
+            .ToList();
+
+        foreach (var chapter in chaptersToRecalculate)
+        {
+            chapter.Deadline = Deadline.DeadlineCalculator.CalculateDeadline(
+                schedule.PublishDate,
+                schedule.PublishPeriod,
+                chapter.ChapterNumber);
+
+            chapter.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        
         return new Response.GetPublishingScheduleResponse()
         {
             ScheduleId = schedule.Id,
