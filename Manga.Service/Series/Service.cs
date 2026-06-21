@@ -229,6 +229,26 @@ public class Service: IService
             series.Status = SeriesStatus.Rejected;
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        
+        if (!string.IsNullOrWhiteSpace(request.Note))
+        {
+            var feedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = editor.Id,
+                Content   = request.Note,
+                SeriesId  = series.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        //
+        
         await _dbContext.SaveChangesAsync();
 
         return new Response.ReviewSeriesResponse()
@@ -237,6 +257,7 @@ public class Service: IService
             Title = series.Title,
             Status = series.Status,
             Note = request.Note,
+            FeedbackCreated = feedbackCreated,
             ReviewerName = $"{editor.FirstName} {editor.LastName}",
             ReviewerRole = editor.Role.ToString(),
             UpdatedAt = series.UpdatedAt.Value
@@ -279,6 +300,26 @@ public class Service: IService
             series.Status = SeriesStatus.Rejected;
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        
+        if (!string.IsNullOrWhiteSpace(request.Note))
+        {
+            var feedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = board.Id,
+                Content   = request.Note,
+                SeriesId  = series.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        //
+        
         await _dbContext.SaveChangesAsync();
         
         return new Response.ReviewSeriesResponse
@@ -287,6 +328,7 @@ public class Service: IService
             Title        = series.Title,
             Status       = series.Status,
             Note         = request.Note,
+            FeedbackCreated = feedbackCreated,
             ReviewerName = $"{board.FirstName} {board.LastName}",
             ReviewerRole = nameof(UserRole.Editorial),
             UpdatedAt    = series.UpdatedAt.Value

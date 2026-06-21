@@ -69,6 +69,8 @@ public class Response
         public Guid SeriesId { get; set; }
         public string SeriesTitle { get; set; } = string.Empty;
         public string UpdatedByName { get; set; } = string.Empty;
+        public string? Feedback { get; set; } //
+        public bool FeedbackCreated { get; set; }// 
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
         public List<TaskSummary> Tasks { get; set; } = new();
