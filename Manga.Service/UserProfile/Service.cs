@@ -121,11 +121,29 @@ public class Service : IService
     public async Task<Response.GetProfileResponse> UpdateUserStatus(Request.UpdateUserStatusRequest request)
     {
         var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == request.UserId);
-        if (user == null || user.IsDeleted) throw new InvalidOperationException("This account not found or was deleted.");
+        if (user == null || user.IsDeleted) 
+            throw new InvalidOperationException("This account was not found or has been deleted.");
+
         if (request.SupervisorId.HasValue)
         {
-            var checkSupervisorExist =  await _dbContext.Users.AnyAsync(c => c.Id == request.SupervisorId && c.Role == UserRole.Tantou && !c.IsDeleted);
-            if(!checkSupervisorExist) throw new InvalidOperationException("This tantou account  not found or was deleted. Or this account isn't tantou");
+            if (user.Role != UserRole.Mangaka)
+                throw new InvalidOperationException("Only Mangaka can be assigned a supervisor.");
+
+            var supervisor = await _dbContext.Users
+                .FirstOrDefaultAsync(c => c.Id == request.SupervisorId.Value && c.Role == UserRole.Tantou && !c.IsDeleted);
+            
+            if (supervisor == null) 
+                throw new InvalidOperationException("The specified Tantou account was not found, deleted, or is not a Tantou.");
+
+            if (user.SupervisorId != request.SupervisorId.Value)
+            {
+                var currentMangakaCount = await _dbContext.Users
+                    .CountAsync(m => m.SupervisorId == request.SupervisorId.Value && !m.IsDeleted && m.Role == UserRole.Mangaka && m.Status == UserStatus.Active);
+
+                if (currentMangakaCount >= 3)
+                    throw new InvalidOperationException("This Tantou already manages the maximum limit of 3 Mangakas.");
+            }
+
             user.SupervisorId = request.SupervisorId.Value;
         }
         else
@@ -133,8 +151,29 @@ public class Service : IService
             user.SupervisorId = null;
         }
 
-        user.Status = request.Status;   
+        user.Status = request.Status;
+
+        if (request.Status == UserStatus.Inactive)
+        {
+            if (user.Role == UserRole.Mangaka)
+            {
+                user.SupervisorId = null;
+            }
+            else if (user.Role == UserRole.Tantou)
+            {
+                var managedMangakas = await _dbContext.Users
+                    .Where(u => u.SupervisorId == user.Id)
+                    .ToListAsync();
+
+                foreach (var mangaka in managedMangakas)
+                {
+                    mangaka.SupervisorId = null;
+                }
+            }
+        }
+
         await _dbContext.SaveChangesAsync();
+
         return new Response.GetProfileResponse()
         {
             Id = user.Id,
@@ -194,7 +233,7 @@ public class Service : IService
     public async Task<List<Response.GetUserListResponse>> FilterTantouList()
     {
         var tantous = await _dbContext.Users
-            .Where(c => !c.IsDeleted && c.Role == UserRole.Tantou && c.Mangakas.Count(m => !m.IsDeleted && m.Role == UserRole.Mangaka) < 3)
+            .Where(c => !c.IsDeleted && c.Role == UserRole.Tantou && c.Mangakas.Count(m => !m.IsDeleted && m.Role == UserRole.Mangaka && m.Status == UserStatus.Active) < 3)
             .OrderBy(c => c.FirstName)
             .Select(c => new Response.GetUserListResponse()
             {
