@@ -45,6 +45,8 @@ public class Response
         public DateTimeOffset? UpdatedAt { get; set; }
         public DateTimeOffset? Deadline { get; set; }
         public List<TaskSummary> Tasks { get; set; } = new();
+        public double AverageRate { get; set; }
+        public int TotalVotes { get; set; }
     }
     
     public class TaskSummary
