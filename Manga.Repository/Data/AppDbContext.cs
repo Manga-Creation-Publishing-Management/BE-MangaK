@@ -149,7 +149,18 @@ public class AppDbContext : DbContext
             builder.HasIndex(i => i.MangaTaskId).IsUnique();
         });
 
-        modelBuilder.Entity<Feedback>(builder => { builder.Property(f => f.Content).IsRequired().HasMaxLength(3000); });
+        modelBuilder.Entity<Feedback>(builder =>
+        {
+            builder.Property(f => f.Content).IsRequired().HasMaxLength(3000);
+            builder.Property(f => f.Type).IsRequired().HasConversion<string>().HasMaxLength(50)
+                .HasDefaultValue(FeedbackType.Manual);
+            builder.Property(f => f.IsRead).IsRequired().HasDefaultValue(false);
+
+            builder.HasIndex(f => f.SenderId);
+            builder.HasIndex(f => f.SeriesId);
+            builder.HasIndex(f => f.ChapterId);
+            builder.HasIndex(f => f.MangaTaskId);
+        });
 
         modelBuilder.Entity<ChapterVoting>(builder =>
         {
