@@ -9,5 +9,5 @@ public interface IService
     public Task<bool> SubmitTask(Request.SubmitTaskRequest request);
     public Task<bool> ReviewTask(Request.ReviewTaskRequest request);
     public Task<Response.GetTotalTaskResponse> GetTotalTask(Request.GetTaskListRequest request);
-    
+    public Task<bool> UpdateMangaTask(Request.UpdateMangaTaskRequest request);
 }

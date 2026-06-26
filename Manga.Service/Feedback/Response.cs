@@ -1,3 +1,5 @@
+using Manga.Repository.Entity.Enums;
+
 namespace Manga.Service.Feedback;
 
 public class Response
@@ -11,6 +13,8 @@ public class Response
         public string? ChapterTitle { get; set; }
         public string? MangaTaskTitle { get; set; }
         public required string Content { get; set; }
+        public FeedbackType Type { get; set; }
+        public bool IsRead { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }
 }

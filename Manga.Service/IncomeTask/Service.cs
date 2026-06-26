@@ -58,7 +58,7 @@ public class Service : IService
             {
                 IncomeId = i.Id,
                 Amount = userRole == UserRole.Mangaka ? -i.Amount : i.Amount,
-                PaidAt = i.Date ?? DateTime.UtcNow, 
+                PaidAt = i.Date, 
                 Status = i.Status,
                 TaskTitle = i.MangaTask != null ? i.MangaTask.TaskTitle : "Don't connect Task",
             })

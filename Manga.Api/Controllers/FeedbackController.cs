@@ -33,4 +33,22 @@ public class FeedbackController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get feedback list Successfully",
             HttpContext.TraceIdentifier));
     }
+
+    [Authorize]
+    [HttpGet("get-feedback-detail")]
+    public async Task<IActionResult> GetFeedbackDetail([FromQuery] Request.GetFeedBackRequest request)
+    {
+        var result = await _feedbackService.GetFeedBackDetail(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get feedback detail Successfully",
+            HttpContext.TraceIdentifier));
+    }
+
+    [Authorize]
+    [HttpPatch("mark-as-read/{feedbackId}")]
+    public async Task<IActionResult> MarkAsRead([FromRoute] Guid feedbackId)
+    {
+        var result = await _feedbackService.MarkAsRead(feedbackId);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Mark feedback as read successfully",
+            HttpContext.TraceIdentifier));
+    }
 }

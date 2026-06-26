@@ -76,7 +76,7 @@ public class Service : IService
         {
             Id = Guid.NewGuid(),
             TaskTitle = request.TaskTitle,
-            TaskDescription = request.Page_range,
+            TaskDescription = request.From.ToString() + "-" + request.To.ToString(),
             Status = MangaTaskStatus.Available,
             Deadline = request.Deadline,
             AssignedAt = DateTimeOffset.UtcNow,
@@ -265,7 +265,9 @@ public class Service : IService
     public async Task<bool> ReviewTask(Request.ReviewTaskRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
+        var task = await _dbContext.MangaTasks
+            .Include(x => x.Chapter)
+            .FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.CreatedById != userIdGuid)
             throw new UnauthorizedAccessException("Only the creator can review this task");
@@ -299,7 +301,11 @@ public class Service : IService
                     SenderId = userIdGuid,
                     Content = request.FeedbackContent,
                     CreatedAt = currentDate,
-                    MangaTaskId = task.Id
+                    MangaTaskId = task.Id,
+                    ChapterId = task.ChapterId,
+                    SeriesId = task.Chapter?.SeriesId,
+                    Type = FeedbackType.StatusChange,
+                    IsRead = false
                 };
                 _dbContext.Feedbacks.Add(feedback);
             }
@@ -333,6 +339,46 @@ public class Service : IService
             Total = total,
             NumberOfStatus = checkStatus
         };
+    }
+
+    public async Task<bool> UpdateMangaTask(Request.UpdateMangaTaskRequest request)
+    {
+        var userIdGuid = GetCurrentUserId();
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized");
+        if (user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka is allowed");
+
+        var task = await _dbContext.MangaTasks
+            .Include(x => x.Chapter)
+            .FirstOrDefaultAsync(x => x.Id == request.TaskId);
+        if (task == null) throw new KeyNotFoundException("Task not found");
+        if (task.CreatedById != userIdGuid) throw new UnauthorizedAccessException("Only the creator can update this task");
+
+        if (task.Status == MangaTaskStatus.Completed)
+            throw new InvalidOperationException("Cannot update deadline for a completed task.");
+        if (task.Status == MangaTaskStatus.Rejected)
+            throw new InvalidOperationException("Cannot update deadline for a rejected task.");
+
+        if (request.Deadline <= DateTimeOffset.UtcNow)
+        {
+            throw new InvalidDataException("Deadline must be a future date.");
+        }
+
+        if (task.Chapter == null)
+        {
+            throw new KeyNotFoundException("Chapter not found for this task.");
+        }
+
+        if (request.Deadline >= task.Chapter.Deadline)
+        {
+            throw new InvalidDataException("Deadline task must be before Deadline Chapter.");
+        }
+
+        task.Deadline = request.Deadline;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 
     private Guid GetCurrentUserId()

@@ -171,9 +171,7 @@ public class Service : IService
                 }
             }
         }
-
         await _dbContext.SaveChangesAsync();
-
         return new Response.GetProfileResponse()
         {
             Id = user.Id,
