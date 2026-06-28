@@ -50,8 +50,11 @@ public class Service: IService
             throw new UnauthorizedAccessException("You are not the creator for series");
         
         //
-        if(series.Status != SeriesStatus.Publishing)
+        if(series.Status != SeriesStatus.Scheduled && series.Status != SeriesStatus.Publishing)
             throw new Exception("Series need publising before create chapter");
+        
+        if (series.PublishingSchedule == null)
+            throw new InvalidOperationException("Series does not have a publishing schedule yet.");
         
         // if(request.Deadline <= DateTimeOffset.UtcNow)
         //     throw new ArgumentException("Deadline must be in the future");
@@ -82,6 +85,9 @@ public class Service: IService
             chapterFileUrl = result.FileUrl;
         }
 
+        if (chapterFileUrl != null && (request.TotalPage == null || request.TotalPage <= 0))
+            throw new ArgumentException("TotalPage is required when ChapterFileUrl is provided");
+        
         var chapter = new Repository.Entity.Chapter()
         {
             Id = Guid.NewGuid(),
@@ -90,6 +96,7 @@ public class Service: IService
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
+            TotalPage = request.TotalPage,  // 
             Status = ChapterStatus.Created,
             SeriesId = seriesId,
             Deadline = deadline,
@@ -107,6 +114,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
+            TotalPage = chapter.TotalPage,   //
             Status = chapter.Status,
             SeriesId = seriesId,
             SeriesTitle = series.Title,
@@ -135,6 +143,7 @@ public class Service: IService
             ChapterNumber = c.ChapterNumber,
             Title = c.Title,
             Summary = c.Summary,
+            TotalPage = c.TotalPage,//
             Status = c.Status,
             TotalTask = c.MangaTasks.Count(t => !t.IsDeleted),
             CreatedAt = c.CreatedAt
@@ -179,6 +188,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = chapter.ManuscriptFileUrl,
             ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage, 
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
@@ -225,12 +235,16 @@ public class Service: IService
 
             if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
                 throw new ArgumentException("Chapter file is required to submit");
+            
+            if (request.TotalPage == null || request.TotalPage <= 0)
+                throw new ArgumentException("TotalPage is required to submit chapter");
 
             if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
                 throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
 
             var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
             chapter.ChapterFileUrl = uploadResult.FileUrl;
+            chapter.TotalPage = request.TotalPage; 
             chapter.Status = ChapterStatus.Pending;
         }
         else if (user.Role == UserRole.Tantou)
@@ -294,6 +308,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = chapter.ManuscriptFileUrl,
             ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage,  
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
