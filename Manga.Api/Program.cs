@@ -1,4 +1,5 @@
 using MailKit;
+using Manga.Api.BackgroundJobs;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
@@ -53,6 +54,7 @@ builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
 builder.Services.AddScoped<MailService.IService, MailService.Service>();
 builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
 builder.Services.AddScoped<LeaderboardService.IService, LeaderboardService.Service>();
+builder.Services.AddHostedService<DeadlineCheckerService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(

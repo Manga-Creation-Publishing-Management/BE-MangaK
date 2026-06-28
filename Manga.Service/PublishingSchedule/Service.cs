@@ -66,7 +66,7 @@ public class Service: IService
 
         await _dbContext.PublishingSchedules.AddAsync(schedule);
 
-        series.Status = SeriesStatus.Publishing;
+        series.Status = SeriesStatus.Scheduled;
         series.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -165,8 +165,9 @@ public class Service: IService
         if(schedule == null)
             throw new KeyNotFoundException("Publishing schedule not found");
         
-        if(schedule.Series.Status != SeriesStatus.Publishing)
-            throw new InvalidOperationException($"Series must be in publishing status. Current status{schedule.Series.Status}");
+        //
+        if(schedule.Series.Status != SeriesStatus.Scheduled)
+            throw new InvalidOperationException($"Series must be in scheduled  status. Current status{schedule.Series.Status}");
         
         var newPublishPeriod = request.PublishPeriod ?? schedule.PublishPeriod;
         
