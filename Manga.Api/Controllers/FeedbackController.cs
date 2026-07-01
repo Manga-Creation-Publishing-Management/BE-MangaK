@@ -44,6 +44,14 @@ public class FeedbackController : ControllerBase
     }
 
     [Authorize]
+    [HttpGet("get-feedback-annotation")]
+    public async Task<IActionResult> GetFeedbackAnnotation([FromQuery] Request.GetFeedBackRequest request)
+    {
+        var result = await _feedbackService.GetFeedbackAnnotation(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get feedback annotation Successfully",
+            HttpContext.TraceIdentifier));
+    }
+    [Authorize]
     [HttpPatch("mark-as-read/{feedbackId}")]
     public async Task<IActionResult> MarkAsRead([FromRoute] Guid feedbackId)
     {
