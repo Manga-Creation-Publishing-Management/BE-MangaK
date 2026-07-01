@@ -37,7 +37,8 @@ public class Service : IService
         if (chapter.SeriesId != series.Id)
             throw new InvalidDataException("Chapter does not belong to the specified series.");
         if (chapter.Series == null || (chapter.Series.Status != SeriesStatus.Approved &&
-                                       chapter.Series.Status != SeriesStatus.Publishing))
+                                       chapter.Series.Status != SeriesStatus.Publishing &&
+                                       chapter.Series.Status != SeriesStatus.Scheduled))
         {
             throw new InvalidDataException("You cannot create a task. Series must be approved or publishing");
         }
