@@ -190,7 +190,7 @@ public class Service : IService
             .Include(f => f.Series)
             .Include(f => f.Chapter)
             .Include(f => f.MangaTask)
-            .Where(f => !f.IsDeleted).AsNoTracking();
+            .Where(f => !f.IsDeleted && f.Type != FeedbackType.EditPDF).AsNoTracking();
 
         if (user.Role == UserRole.Mangaka)
         {
