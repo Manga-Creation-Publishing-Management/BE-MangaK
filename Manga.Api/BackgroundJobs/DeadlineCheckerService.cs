@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Data;
+using Manga.Repository.Data;
 using Manga.Repository.Entity.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,7 +40,7 @@ public class DeadlineCheckerService : BackgroundService
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var now = DateTimeOffset.UtcNow;
-        
+
         await CheckPublishingSchedulesAsync(dbContext, now);
         await CheckChapterDeadlinesAsync(dbContext, now);
         await CheckMangaTaskDeadlinesAsync(dbContext, now);
