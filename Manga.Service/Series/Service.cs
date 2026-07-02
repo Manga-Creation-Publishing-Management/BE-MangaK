@@ -134,6 +134,7 @@ public class Service: IService
             .Include(s => s.CategorySeries)
                 .ThenInclude(cs => cs.Category) 
             .Include(s => s.Chapters.Where(c => !c.IsDeleted))
+            .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (series == null)
@@ -479,6 +480,7 @@ public class Service: IService
             .Include(s => s.PublishingSchedule)
             .Include(s => s.Chapters.Where(c => !c.IsDeleted))
             .ThenInclude(c => c.ChapterVotes)
+            .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
         
         if (request.RankingType == "Weekly")

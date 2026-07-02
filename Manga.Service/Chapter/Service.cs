@@ -134,7 +134,7 @@ public class Service: IService
         var chapter = await _dbContext.Chapters
             .Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .Include(c => c.MangaTasks)
-            .OrderBy(c => c.ChapterNumber)
+            .OrderByDescending(c => c.ChapterNumber)
             .ToListAsync();
 
         var result = chapter.Select(c => new Response.GetAllChaptersResponse()
