@@ -45,6 +45,10 @@ public class DeadlineCheckerService : BackgroundService
         await CheckChapterDeadlinesAsync(dbContext, now);
         await CheckMangaTaskDeadlinesAsync(dbContext, now);
 
+        await CheckSeriesDelaysAsync(dbContext, now);
+        await CheckChapterTaskCreationAsync(dbContext, now);
+        await CheckTaskAcceptanceAndReviewDelaysAsync(dbContext, now);
+
         await dbContext.SaveChangesAsync(cancellationToken);
     }
     
@@ -99,5 +103,188 @@ public class DeadlineCheckerService : BackgroundService
 
         if (tasksToUpdate.Count > 0)
             _logger.LogInformation("{Count} manga task(s) switched to Pending.", tasksToUpdate.Count);
+    }
+    
+    private async Task<Guid?> GetBoardUserIdAsync(AppDbContext dbContext)
+    {
+        var boardUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Editorial);
+        return boardUser?.Id;
+    }
+
+    private async Task CheckSeriesDelaysAsync(AppDbContext dbContext, DateTimeOffset now)
+    {
+        var boardUserId = await GetBoardUserIdAsync(dbContext);
+        if (boardUserId == null) return; 
+
+        var sevenDaysAgo = now.AddDays(-7);
+
+        // Rule 1a: Tantou Review (Processing)
+        var seriesToTantou = await dbContext.Series
+            .Where(s => s.Status == SeriesStatus.Processing && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
+            .ToListAsync();
+
+        foreach (var series in seriesToTantou)
+        {
+            var alreadyNotified = await dbContext.Feedbacks.AnyAsync(f => f.SeriesId == series.Id && f.Content == "Reminder: Series is waiting for Tantou review." && f.CreatedAt >= sevenDaysAgo);
+            if (!alreadyNotified)
+            {
+                dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+                {
+                    Id = Guid.NewGuid(),
+                    SeriesId = series.Id,
+                    SenderId = boardUserId.Value,
+                    Content = "Reminder: Series is waiting for Tantou review.",
+                    Type = FeedbackType.StatusChange,
+                    CreatedAt = now,
+                    IsRead = false
+                });
+            }
+        }
+
+        // Rule 1b: Board Review (Pending)
+        var seriesToBoard = await dbContext.Series
+            .Where(s => s.Status == SeriesStatus.Pending && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
+            .ToListAsync();
+
+        foreach (var series in seriesToBoard)
+        {
+            var alreadyNotified = await dbContext.Feedbacks.AnyAsync(f => f.SeriesId == series.Id && f.Content == "Reminder: Series is waiting for Board review." && f.CreatedAt >= sevenDaysAgo);
+            if (!alreadyNotified)
+            {
+                dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+                {
+                    Id = Guid.NewGuid(),
+                    SeriesId = series.Id,
+                    SenderId = boardUserId.Value,
+                    Content = "Reminder: Series is waiting for Board review.",
+                    Type = FeedbackType.StatusChange,
+                    CreatedAt = now,
+                    IsRead = false
+                });
+            }
+        }
+
+        // Rule 1c: Schedule Creation (Approved)
+        var seriesWaitingSchedule = await dbContext.Series
+            .Include(s => s.PublishingSchedule)
+            .Where(s => s.Status == SeriesStatus.Approved && s.PublishingSchedule == null && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
+            .ToListAsync();
+
+        foreach (var series in seriesWaitingSchedule)
+        {
+            var alreadyNotified = await dbContext.Feedbacks.AnyAsync(f => f.SeriesId == series.Id && f.Content == "Reminder: Series is waiting for Schedule creation." && f.CreatedAt >= sevenDaysAgo);
+            if (!alreadyNotified)
+            {
+                dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+                {
+                    Id = Guid.NewGuid(),
+                    SeriesId = series.Id,
+                    SenderId = boardUserId.Value,
+                    Content = "Reminder: Series is waiting for Schedule creation.",
+                    Type = FeedbackType.StatusChange,
+                    CreatedAt = now,
+                    IsRead = false
+                });
+            }
+        }
+    }
+
+    private async Task CheckChapterTaskCreationAsync(AppDbContext dbContext, DateTimeOffset now)
+    {
+        var boardUserId = await GetBoardUserIdAsync(dbContext);
+        if (boardUserId == null) return;
+
+        var twelveHoursAgo = now.AddHours(-12);
+
+        var chapters = await dbContext.Chapters
+            .Include(c => c.MangaTasks)
+            .Where(c => !c.IsDeleted && c.CreatedAt <= twelveHoursAgo && c.MangaTasks.Count == 0)
+            .ToListAsync();
+
+        foreach (var chapter in chapters)
+        {
+            var alreadyNotified = await dbContext.Feedbacks.AnyAsync(f => f.ChapterId == chapter.Id && f.Content == "Reminder: Please create a task for this chapter." && f.CreatedAt >= now.AddDays(-1));
+            if (!alreadyNotified)
+            {
+                dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+                {
+                    Id = Guid.NewGuid(),
+                    ChapterId = chapter.Id,
+                    SeriesId = chapter.SeriesId,
+                    SenderId = boardUserId.Value,
+                    Content = "Reminder: Please create a task for this chapter.",
+                    Type = FeedbackType.StatusChange,
+                    CreatedAt = now,
+                    IsRead = false
+                });
+            }
+        }
+    }
+
+    private async Task CheckTaskAcceptanceAndReviewDelaysAsync(AppDbContext dbContext, DateTimeOffset now)
+    {
+        var boardUserId = await GetBoardUserIdAsync(dbContext);
+        if (boardUserId == null) return;
+
+        var twentyFourHoursAgo = now.AddHours(-24);
+
+        // Rule 3: Task Acceptance (Available for 24h)
+        var tasksToAccept = await dbContext.MangaTasks
+            .Where(t => !t.IsDeleted && t.Status == MangaTaskStatus.Available && t.CreatedAt <= twentyFourHoursAgo)
+            .ToListAsync();
+
+        foreach (var task in tasksToAccept)
+        {
+            task.Status = MangaTaskStatus.Rejected;
+            task.UpdatedAt = now;
+
+            dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+            {
+                Id = Guid.NewGuid(),
+                MangaTaskId = task.Id,
+                ChapterId = task.ChapterId,
+                SenderId = boardUserId.Value,
+                Content = "Task was rejected automatically due to no action from assistant in 24 hours. Please re-assign.",
+                Type = FeedbackType.StatusChange,
+                CreatedAt = now,
+                IsRead = false
+            });
+        }
+
+        // Rule 4: Mangaka Review (Pending for 24h/48h)
+        var tasksToReview = await dbContext.MangaTasks
+            .Include(t => t.Chapter)
+            .ThenInclude(c => c.Series)
+            .ThenInclude(s => s.PublishingSchedule)
+            .Where(t => !t.IsDeleted && t.Status == MangaTaskStatus.Pending)
+            .ToListAsync();
+
+        foreach (var task in tasksToReview)
+        {
+            var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
+            var maxReviewHours = publishPeriod?.Equals("Weekly", StringComparison.OrdinalIgnoreCase) == true ? 24 : 48;
+            
+            var submittedTime = task.UpdatedAt ?? task.SubmittedAt ?? task.CreatedAt;
+            var deadline = submittedTime.AddHours(maxReviewHours);
+
+            if (now >= deadline)
+            {
+                var alreadyNotified = await dbContext.Feedbacks.AnyAsync(f => f.MangaTaskId == task.Id && f.Content == "Reminder: Please review this submitted task." && f.CreatedAt >= now.AddDays(-1));
+                if (!alreadyNotified)
+                {
+                    dbContext.Feedbacks.Add(new Repository.Entity.Feedback
+                    {
+                        Id = Guid.NewGuid(),
+                        MangaTaskId = task.Id,
+                        ChapterId = task.ChapterId,
+                        SenderId = boardUserId.Value,
+                        Content = "Reminder: Please review this submitted task.",
+                        Type = FeedbackType.StatusChange,
+                        CreatedAt = now,
+                        IsRead = false
+                    });
+                }
+            }
+        }
     }
 }
