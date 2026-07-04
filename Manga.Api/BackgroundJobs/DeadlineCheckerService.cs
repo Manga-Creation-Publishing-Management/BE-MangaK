@@ -118,7 +118,6 @@ public class DeadlineCheckerService : BackgroundService
 
         var sevenDaysAgo = now.AddDays(-7);
 
-        // Rule 1a: Tantou Review (Processing)
         var seriesToTantou = await dbContext.Series
             .Where(s => s.Status == SeriesStatus.Processing && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
             .ToListAsync();
@@ -141,7 +140,6 @@ public class DeadlineCheckerService : BackgroundService
             }
         }
 
-        // Rule 1b: Board Review (Pending)
         var seriesToBoard = await dbContext.Series
             .Where(s => s.Status == SeriesStatus.Pending && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
             .ToListAsync();
@@ -164,7 +162,6 @@ public class DeadlineCheckerService : BackgroundService
             }
         }
 
-        // Rule 1c: Schedule Creation (Approved)
         var seriesWaitingSchedule = await dbContext.Series
             .Include(s => s.PublishingSchedule)
             .Where(s => s.Status == SeriesStatus.Approved && s.PublishingSchedule == null && (s.UpdatedAt ?? s.CreatedAt) <= sevenDaysAgo)
@@ -228,7 +225,6 @@ public class DeadlineCheckerService : BackgroundService
 
         var twentyFourHoursAgo = now.AddHours(-24);
 
-        // Rule 3: Task Acceptance (Available for 24h)
         var tasksToAccept = await dbContext.MangaTasks
             .Where(t => !t.IsDeleted && t.Status == MangaTaskStatus.Available && t.CreatedAt <= twentyFourHoursAgo)
             .ToListAsync();
@@ -251,7 +247,6 @@ public class DeadlineCheckerService : BackgroundService
             });
         }
 
-        // Rule 4: Mangaka Review (Pending for 24h/48h)
         var tasksToReview = await dbContext.MangaTasks
             .Include(t => t.Chapter)
             .ThenInclude(c => c.Series)
