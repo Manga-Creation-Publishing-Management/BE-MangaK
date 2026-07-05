@@ -43,6 +43,7 @@ public class DeadlineCheckerService : BackgroundService
 
         await CheckPublishingSchedulesAsync(dbContext, now);
         await CheckChapterDeadlinesAsync(dbContext, now);
+        await CheckScheduledChaptersAsync(dbContext, now); 
         await CheckMangaTaskDeadlinesAsync(dbContext, now);
 
         await CheckSeriesDelaysAsync(dbContext, now);
@@ -86,6 +87,55 @@ public class DeadlineCheckerService : BackgroundService
         if (chaptersToUpdate.Count > 0)
             _logger.LogInformation("{Count} chapter(s) switched to Pending.", chaptersToUpdate.Count);
     }
+    
+    //
+    private async Task CheckScheduledChaptersAsync(AppDbContext dbContext, DateTimeOffset now)
+    {
+        var scheduledChapters = await dbContext.Chapters
+            .Where(c => !c.IsDeleted && c.Status == ChapterStatus.Scheduled)
+            .Include(c => c.Series)
+                .ThenInclude(s => s.PublishingSchedule)
+            .ToListAsync();
+
+        foreach (var chapter in scheduledChapters)
+        {
+            var schedule = chapter.Series.PublishingSchedule;
+            
+            if (schedule == null || schedule.IsDeleted)
+                continue;
+            
+            var publishDateForChapter = CalculateChapterPublishDate(
+                schedule.PublishDate,
+                schedule.PublishPeriod,
+                chapter.ChapterNumber);
+            
+            if (now >= publishDateForChapter)
+            {
+                chapter.Status    = ChapterStatus.Publishing;
+                chapter.UpdatedAt = now;
+
+                _logger.LogInformation(
+                    "Chapter {ChapterNumber} of Series {SeriesId} switched to Publishing.",
+                    chapter.ChapterNumber, chapter.SeriesId);
+            }
+        }
+    }
+    
+    private static DateTimeOffset CalculateChapterPublishDate(
+        DateTimeOffset publishDate,
+        string? publishPeriod,
+        int chapterNumber)
+    {
+        var periodDays = publishPeriod?.Trim().ToLowerInvariant() switch
+        {
+            "weekly"  => 7,
+            "monthly" => 30,
+            _         => 7  
+        };
+
+        return publishDate.AddDays((chapterNumber - 1) * periodDays);
+    }
+    //
     
     private async Task CheckMangaTaskDeadlinesAsync(AppDbContext dbContext, DateTimeOffset now)
     {
