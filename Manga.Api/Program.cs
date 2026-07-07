@@ -99,6 +99,7 @@ if (app.Environment.IsDevelopment())
 //AI
 app.UseCors("AllowFrontend");
 //AI
+//Testing
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseAuthentication();
