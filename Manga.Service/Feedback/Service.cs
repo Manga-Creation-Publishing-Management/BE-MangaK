@@ -61,7 +61,6 @@ public class Service : IService
 
         if (series == null) throw new KeyNotFoundException("Series not found or deleted");
 
-        // Role-based validation
         if (user.Role == UserRole.Mangaka)
         {
             if (!request.MangaTaskId.HasValue)
@@ -111,7 +110,6 @@ public class Service : IService
             .FirstOrDefaultAsync(x => x.Id == request.SeriesId && x.IsDeleted == false);
         if (series == null) throw new KeyNotFoundException("Series not found");
 
-        // Row level security: check if user has access to view this series' feedbacks
         if (user.Role == UserRole.Mangaka)
         {
             if (series.CreatedById != user.Id)
@@ -150,7 +148,6 @@ public class Service : IService
             query = query.Where(x => x.MangaTaskId == request.MangaTaskId.Value);
         }
 
-        // Apply visibility rules for different roles
         if (user.Role == UserRole.Assistant)
         {
             query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
@@ -193,7 +190,7 @@ public class Service : IService
             .Include(f => f.Series)
             .Include(f => f.Chapter)
             .Include(f => f.MangaTask)
-            .Where(f => !f.IsDeleted).AsNoTracking();
+            .Where(f => !f.IsDeleted && f.Type != FeedbackType.EditPDF).AsNoTracking();
 
         if (user.Role == UserRole.Mangaka)
         {
@@ -244,6 +241,53 @@ public class Service : IService
         ).ToListAsync();
         
         return feedback;
+    }
+
+    public async Task<Repository.Entity.Feedback> GetFeedbackAnnotation(Request.GetFeedBackRequest request)
+    {
+        var userId = GetUserIdCurrent();
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+
+        var series = await _dbContext.Series
+            .Include(s => s.CreatedBy)
+            .FirstOrDefaultAsync(x => x.Id == request.SeriesId && x.IsDeleted == false);
+        if (series == null) throw new KeyNotFoundException("Series not found");
+        if (user.Role == UserRole.Mangaka)
+        {
+            if (series.CreatedById != user.Id)
+                throw new UnauthorizedAccessException("You are not the creator of this series");
+        }
+        else if (user.Role == UserRole.Tantou)
+        {
+            if (series.ReviewedById != user.Id && (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
+                throw new UnauthorizedAccessException("You do not supervise or review this series");
+        }else if (user.Role == UserRole.Assistant)
+        {
+            if (!request.MangaTaskId.HasValue)
+                throw new UnauthorizedAccessException("Assistant can only query feedback for specific tasks");
+            var mangaTask = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.MangaTaskId.Value && x.IsDeleted == false);
+            if (mangaTask == null || mangaTask.AssignedToId != userId) throw new KeyNotFoundException("You are not assigned to this task or MangaTask not found");
+        }else if (user.Role != UserRole.Editorial && user.Role != UserRole.Admin) throw new UnauthorizedAccessException("You don't have permission to view Feedback");
+
+        IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks
+            .Where(x => x.SeriesId == series.Id && x.IsDeleted == false && x.Type == FeedbackType.EditPDF).AsNoTracking();
+        if(request.ChapterId.HasValue) query = query.Where(f =>  f.ChapterId == request.ChapterId.Value);
+        if(request.MangaTaskId.HasValue) query = query.Where(f =>  f.MangaTaskId == request.MangaTaskId.Value);
+        if (user.Role == UserRole.Assistant)
+        {
+            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
+        }
+        else if (user.Role == UserRole.Mangaka)
+        {
+            query = query.Where(f => f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id);
+        }
+        else if (user.Role == UserRole.Tantou)
+        {
+            query = query.Where(f => f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
+        }
+        var resultFeedback = await query.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
+        return resultFeedback;
     }
 
     public async Task<bool> MarkAsRead(Guid feedbackId)

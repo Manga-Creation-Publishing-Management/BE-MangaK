@@ -12,6 +12,7 @@ public class Request
         // public DateTimeOffset Deadline { get; set; }
         public IFormFile? ManuscriptFileUrl { get; set; }
         public IFormFile? ChapterFileUrl { get; set; }
+        public int? TotalPage { get; set; }
     }
 
 
@@ -20,6 +21,7 @@ public class Request
         public ChapterStatus? Status { get; set; }
         public IFormFile? ChapterFileUrl { get; set; }
         public string? Feedback { get; set; }
+        public int? TotalPage { get; set; }//
     }
 
 }

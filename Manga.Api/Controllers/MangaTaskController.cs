@@ -1,4 +1,4 @@
-using Manga.Api.extensions;
+﻿using Manga.Api.extensions;
 using Manga.Repository.Entity;
 using Manga.Service.MangaTask;
 using Manga.Service.Model;
@@ -79,6 +79,13 @@ public class MangaTaskController : ControllerBase
     public async Task<IActionResult> GetProcessOfChapter([FromQuery] Request.GetTaskListRequest request)
     {
         var result = await _mangaTaskservice.GetTotalTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
+    }
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpPost("re-assign-task")]
+    public async Task<IActionResult> ReassignTask([FromBody] Request.ReassignTaskRequest request)
+    {
+        var result = await _mangaTaskservice.ReassignTaskAsync(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
     }
 }

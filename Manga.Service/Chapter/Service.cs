@@ -50,8 +50,11 @@ public class Service: IService
             throw new UnauthorizedAccessException("You are not the creator for series");
         
         //
-        if(series.Status != SeriesStatus.Publishing)
+        if(series.Status != SeriesStatus.Scheduled && series.Status != SeriesStatus.Publishing)
             throw new Exception("Series need publising before create chapter");
+        
+        if (series.PublishingSchedule == null)
+            throw new InvalidOperationException("Series does not have a publishing schedule yet.");
         
         // if(request.Deadline <= DateTimeOffset.UtcNow)
         //     throw new ArgumentException("Deadline must be in the future");
@@ -82,6 +85,9 @@ public class Service: IService
             chapterFileUrl = result.FileUrl;
         }
 
+        if (chapterFileUrl != null && (request.TotalPage == null || request.TotalPage <= 0))
+            throw new ArgumentException("TotalPage is required when ChapterFileUrl is provided");
+        
         var chapter = new Repository.Entity.Chapter()
         {
             Id = Guid.NewGuid(),
@@ -90,6 +96,7 @@ public class Service: IService
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
+            TotalPage = request.TotalPage,  // 
             Status = ChapterStatus.Created,
             SeriesId = seriesId,
             Deadline = deadline,
@@ -107,6 +114,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
             ChapterFileUrl = chapterFileUrl,
+            TotalPage = chapter.TotalPage,   //
             Status = chapter.Status,
             SeriesId = seriesId,
             SeriesTitle = series.Title,
@@ -126,7 +134,7 @@ public class Service: IService
         var chapter = await _dbContext.Chapters
             .Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .Include(c => c.MangaTasks)
-            .OrderBy(c => c.ChapterNumber)
+            .OrderByDescending(c => c.ChapterNumber)
             .ToListAsync();
 
         var result = chapter.Select(c => new Response.GetAllChaptersResponse()
@@ -135,6 +143,7 @@ public class Service: IService
             ChapterNumber = c.ChapterNumber,
             Title = c.Title,
             Summary = c.Summary,
+            TotalPage = c.TotalPage,//
             Status = c.Status,
             TotalTask = c.MangaTasks.Count(t => !t.IsDeleted),
             CreatedAt = c.CreatedAt
@@ -179,6 +188,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = chapter.ManuscriptFileUrl,
             ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage, 
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
@@ -225,31 +235,42 @@ public class Service: IService
 
             if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
                 throw new ArgumentException("Chapter file is required to submit");
+            
+            if (request.TotalPage == null || request.TotalPage <= 0)
+                throw new ArgumentException("TotalPage is required to submit chapter");
 
             if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
                 throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
 
             var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
             chapter.ChapterFileUrl = uploadResult.FileUrl;
+            chapter.TotalPage = request.TotalPage; 
             chapter.Status = ChapterStatus.Pending;
         }
         else if (user.Role == UserRole.Tantou)
         {
             if (!request.Status.HasValue)
                 throw new ArgumentException("Status is required");
+            
+            if (chapter.Series.Status != SeriesStatus.Scheduled && chapter.Series.Status != SeriesStatus.Publishing)
+                throw new ArgumentException("Series must be Scheduled or Publishing for Tantou to review chapter.");
+            
+            if (chapter.Status != ChapterStatus.Pending)
+                throw new ArgumentException("Chapter must be in Pending status for Tantou to review.");
 
-            if (chapter.Series.Status != SeriesStatus.Publishing)
-                throw new ArgumentException("Tantou can only set status to Publishing when series is Publishing");
-            
-            
-            if (chapter.Status == ChapterStatus.Pending)
+            if (request.Status.Value == ChapterStatus.Rejected)
             {
-                if (request.Status.Value != ChapterStatus.Rejected &&
-                    request.Status.Value != ChapterStatus.Publishing)
-                    throw new ArgumentException("Tantou can only set status to Rejected and Publishing when chapter is Pending");
+                chapter.Status = ChapterStatus.Rejected;
             }
-            
-            chapter.Status = request.Status.Value;
+            else if (request.Status.Value == ChapterStatus.Scheduled)
+            {
+                
+                chapter.Status = ChapterStatus.Scheduled;
+            }
+            else
+            {
+                throw new ArgumentException("Tantou can only set chapter status to Scheduled or Rejected.");
+            }
         }
         
         chapter.UpdatedAt = DateTimeOffset.UtcNow;
@@ -294,6 +315,7 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = chapter.ManuscriptFileUrl,
             ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage,  
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,

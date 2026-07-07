@@ -1,6 +1,4 @@
-using DotNetEnv;
 using MailKit;
-
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
@@ -22,10 +20,6 @@ using GoogleAuthService = Manga.Service.GoogleAuthService;
 using ChapterVotingService = Manga.Service.ChapterVoting;
 using FeedbackService = Manga.Service.Feedback;
 using LeaderboardService = Manga.Service.Leaderboard;
-
-Env.Load();
-var aspnetCoreEnv  = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", aspnetCoreEnv);
 
 var builder = WebApplication.CreateBuilder(args);
 

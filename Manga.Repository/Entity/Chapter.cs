@@ -10,6 +10,7 @@ public class Chapter: BaseEntity<Guid>, IAuditableEntity
     public string? Summary { get; set; }
     public string? ManuscriptFileUrl { get; set; }
     public string? ChapterFileUrl  { get; set; }
+    public int? TotalPage { get; set; }  //
     public DateTimeOffset Deadline { get; set; }
     public ChapterStatus Status { get; set; }
     
