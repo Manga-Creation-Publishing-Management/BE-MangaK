@@ -38,7 +38,10 @@ public class Service: IService
         if (mangakaUser.Role != UserRole.Mangaka)
             throw new UnauthorizedAccessException("Only Mangaka can create chapter");
 
-        var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == seriesId);
+        //
+        var series = await _dbContext.Series
+            .Include(s => s.PublishingSchedule)
+            .FirstOrDefaultAsync(x => x.Id == seriesId);
 
         if (series == null)
             throw new KeyNotFoundException("Series not found");
@@ -46,20 +49,45 @@ public class Service: IService
         if (series.CreatedById != userIdGuid)
             throw new UnauthorizedAccessException("You are not the creator for series");
         
-        if(series.Status != SeriesStatus.Approved && series.Status != SeriesStatus.Publishing)
-            throw new Exception("Series need approved before create chapter");
-
+        //
+        if(series.Status != SeriesStatus.Scheduled && series.Status != SeriesStatus.Publishing)
+            throw new Exception("Series need publising before create chapter");
+        
+        if (series.PublishingSchedule == null)
+            throw new InvalidOperationException("Series does not have a publishing schedule yet.");
+        
+        // if(request.Deadline <= DateTimeOffset.UtcNow)
+        //     throw new ArgumentException("Deadline must be in the future");
+        
         var lastChapterNumber = await  _dbContext.Chapters.Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .MaxAsync(c => (int?)c.ChapterNumber) ?? 0;
         
         var nextChapterNumber = lastChapterNumber + 1;
+        
+        //
+        var deadline = Deadline.DeadlineCalculator.CalculateDeadline(
+            series.PublishingSchedule!.PublishDate,
+            series.PublishingSchedule.PublishPeriod,
+            nextChapterNumber);
+        
         string? manuscriptFileUrl = null;
+        string? chapterFileUrl = null;
+        
         if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
         {
             var result = await _mediaService.UploadFileAsync(request.ManuscriptFileUrl);
             manuscriptFileUrl = result.FileUrl;
         }
+        
+        if (request.ChapterFileUrl != null && request.ChapterFileUrl.Length > 0)
+        {
+            var result = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+            chapterFileUrl = result.FileUrl;
+        }
 
+        if (chapterFileUrl != null && (request.TotalPage == null || request.TotalPage <= 0))
+            throw new ArgumentException("TotalPage is required when ChapterFileUrl is provided");
+        
         var chapter = new Repository.Entity.Chapter()
         {
             Id = Guid.NewGuid(),
@@ -67,8 +95,11 @@ public class Service: IService
             Title = request.Title,
             Summary = request.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
-            Status = ChapterStatus.Processing,
+            ChapterFileUrl = chapterFileUrl,
+            TotalPage = request.TotalPage,  // 
+            Status = ChapterStatus.Created,
             SeriesId = seriesId,
+            Deadline = deadline,
             CreatedAt = DateTimeOffset.UtcNow
         };
         
@@ -82,9 +113,12 @@ public class Service: IService
             Title = chapter.Title,
             Summary = chapter.Summary,
             ManuscriptFileUrl = manuscriptFileUrl,
+            ChapterFileUrl = chapterFileUrl,
+            TotalPage = chapter.TotalPage,   //
             Status = chapter.Status,
             SeriesId = seriesId,
             SeriesTitle = series.Title,
+            Deadline = chapter.Deadline,
             CreateAt = chapter.CreatedAt
         };
 
@@ -100,7 +134,7 @@ public class Service: IService
         var chapter = await _dbContext.Chapters
             .Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .Include(c => c.MangaTasks)
-            .OrderBy(c => c.ChapterNumber)
+            .OrderByDescending(c => c.ChapterNumber)
             .ToListAsync();
 
         var result = chapter.Select(c => new Response.GetAllChaptersResponse()
@@ -109,6 +143,7 @@ public class Service: IService
             ChapterNumber = c.ChapterNumber,
             Title = c.Title,
             Summary = c.Summary,
+            TotalPage = c.TotalPage,//
             Status = c.Status,
             TotalTask = c.MangaTasks.Count(t => !t.IsDeleted),
             CreatedAt = c.CreatedAt
@@ -124,6 +159,7 @@ public class Service: IService
             .Include(c => c.Series)
             .Include(c => c.MangaTasks.Where(t => !t.IsDeleted))
             .ThenInclude(t => t.AssignedTo)
+            .Include(c => c.ChapterVotes)
             .FirstOrDefaultAsync();
 
         if (chapter == null)
@@ -141,6 +177,9 @@ public class Service: IService
                 AssignedTo = t.AssignedTo.FirstName + " " + t.AssignedTo.LastName,
             }).ToList();
 
+        var totalVotes  = chapter.ChapterVotes.Count;
+        var averageRate = totalVotes > 0 ? Math.Round(chapter.ChapterVotes.Average(v => v.Rate), 2) : 0;
+        
         return new Response.GetChapterDetailsResponse()
         {
             ChapterId = chapter.Id,
@@ -149,9 +188,140 @@ public class Service: IService
             Summary = chapter.Summary,
             ManuscriptFileUrl = chapter.ManuscriptFileUrl,
             ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage, 
             Status = chapter.Status,
             SeriesId = chapter.SeriesId,
             SeriesTitle = chapter.Series.Title,
+            CreatedAt = chapter.CreatedAt,
+            Deadline = chapter.Deadline,
+            UpdatedAt = chapter.UpdatedAt,
+            Tasks = tasks,
+            AverageRate = averageRate,
+            TotalVotes = totalVotes
+        };
+    }
+
+    public async Task<Response.UpdateChapterResponse> UpdateChapter(Guid seriesId, Guid chapterId, Request.UpdateChapterRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
+        
+        if(userId == null)
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(userId);
+        
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        
+        if(user == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (user.Role != UserRole.Mangaka && user.Role != UserRole.Tantou)
+            throw new UnauthorizedAccessException("Only Mangaka or Tantou can update chapter");
+
+        var chapter = await _dbContext.Chapters.Where(x => x.Id == chapterId && !x.IsDeleted)
+            .Include(s => s.Series)
+            .Include(s => s.MangaTasks.Where(t => !t.IsDeleted))
+            .ThenInclude(t => t.AssignedTo)
+            .FirstOrDefaultAsync();
+        
+        if (chapter == null)
+            throw new KeyNotFoundException("Chapter not found");
+
+        if (user.Role == UserRole.Mangaka)
+        {
+            if (chapter.Series.CreatedById != userIdGuid)
+                throw new UnauthorizedAccessException("You are not the creator of this series");
+
+            if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
+                throw new ArgumentException("Chapter file is required to submit");
+            
+            if (request.TotalPage == null || request.TotalPage <= 0)
+                throw new ArgumentException("TotalPage is required to submit chapter");
+
+            if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
+                throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
+
+            var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+            chapter.ChapterFileUrl = uploadResult.FileUrl;
+            chapter.TotalPage = request.TotalPage; 
+            chapter.Status = ChapterStatus.Pending;
+        }
+        else if (user.Role == UserRole.Tantou)
+        {
+            if (!request.Status.HasValue)
+                throw new ArgumentException("Status is required");
+            
+            if (chapter.Series.Status != SeriesStatus.Scheduled && chapter.Series.Status != SeriesStatus.Publishing)
+                throw new ArgumentException("Series must be Scheduled or Publishing for Tantou to review chapter.");
+            
+            if (chapter.Status != ChapterStatus.Pending)
+                throw new ArgumentException("Chapter must be in Pending status for Tantou to review.");
+
+            if (request.Status.Value == ChapterStatus.Rejected)
+            {
+                chapter.Status = ChapterStatus.Rejected;
+            }
+            else if (request.Status.Value == ChapterStatus.Scheduled)
+            {
+                
+                chapter.Status = ChapterStatus.Scheduled;
+            }
+            else
+            {
+                throw new ArgumentException("Tantou can only set chapter status to Scheduled or Rejected.");
+            }
+        }
+        
+        chapter.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        if (!string.IsNullOrWhiteSpace(request.Feedback))
+        {
+            var feedback = new Repository.Entity.Feedback()
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = user.Id,
+                Content   = request.Feedback,
+                SeriesId  = chapter.SeriesId,
+                ChapterId = chapter.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        
+        await _dbContext.SaveChangesAsync();
+
+        var tasks = chapter.MangaTasks
+            .OrderBy(t => t.CreatedAt)
+            .Select(t => new Response.TaskSummary()
+            {
+                MangaTaskId = t.Id,
+                TaskTitle = t.TaskTitle,
+                TaskDescription = t.TaskDescription,
+                Status = t.Status,
+                Deadline = t.Deadline,
+                AssignedTo = $"{t.AssignedTo.FirstName}{t.AssignedTo.LastName}",
+            }).ToList();
+
+        return new Response.UpdateChapterResponse()
+        {
+            ChapterId = chapter.Id,
+            ChapterNumber = chapter.ChapterNumber,
+            Title = chapter.Title,
+            Summary = chapter.Summary,
+            ManuscriptFileUrl = chapter.ManuscriptFileUrl,
+            ChapterFileUrl = chapter.ChapterFileUrl,
+            TotalPage = chapter.TotalPage,  
+            Status = chapter.Status,
+            SeriesId = chapter.SeriesId,
+            SeriesTitle = chapter.Series.Title,
+            UpdatedByName = $"{user.FirstName} {user.LastName}",
+            Feedback = request.Feedback,//
+            FeedbackCreated   = feedbackCreated,//
             CreatedAt = chapter.CreatedAt,
             UpdatedAt = chapter.UpdatedAt,
             Tasks = tasks

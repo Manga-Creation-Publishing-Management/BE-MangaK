@@ -20,14 +20,15 @@ public class Request
         public required string Email { get; set; }
         public required string Password { get; set; }
         public string? Phone { get; set; }
-
-        public UserRole Role { get; set; }
+        public string? AuthorName { get; set; }
+        public Guid? SupervisorId { get; set; }
         public UserStatus Status { get; set; }
     }
 
-    public class RegisterReaderRequest
+    public class LoginByGoogleRequest
     {
-        public required string Email { get; set; }
+        public required string IdTokenGoogle { get; set; }
+        public string? DeviceFingerprint  { get; set; }
     }
 
     public class RefreshTokenRequest

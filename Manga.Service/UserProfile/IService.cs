@@ -1,0 +1,15 @@
+using Manga.Repository.Entity.Enums;
+
+namespace Manga.Service.UserProfile;
+
+public interface IService
+{
+    public Task<Response.GetProfileResponse> GetProfile();
+    public Task<Response.GetProfileResponse> UpdateProfile(Request.UpdateProfileRequest request);
+    public Task<List<Response.GetUserListResponse>> GetUserList();
+    public Task<List<Response.GetUserListByRoleResponse>> GetUserListByRole(Request.GetUserListByRoleRequest request);
+    public Task<Response.GetProfileResponse> UpdateUserStatus(Request.UpdateUserStatusRequest request);
+    public Task<List<Response.GetUserListByRoleResponse>> FilterAssistant(Request.FilterAssistantRequest request);
+    public Task<List<Response.GetUserListResponse>> GetReaderList();
+    public Task<List<Response.GetUserListResponse>> FilterTantouList();
+}

@@ -1,4 +1,4 @@
-﻿using MailKit.Net.Imap;
+using MailKit.Net.Imap;
 using Manga.Repository.Data;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +33,7 @@ public class Service: IService
         if(board == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (board.Role != UserRole.EditorialBoard)
+        if (board.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only Board must can create PublishSchedule.");
 
         var series = await _dbContext.Series
@@ -46,11 +46,13 @@ public class Service: IService
         if (series.Status != SeriesStatus.Approved)
             throw new InvalidOperationException($"Series must be in approved status. Current status{series.Status}");
 
-        if (series.PublishingSchedule != null)
+        if (series.PublishingSchedule != null && !series.PublishingSchedule.IsDeleted)
             throw new InvalidOperationException("Publishing Schedule already exists");
         
         if(request.PublishDate <= DateTimeOffset.UtcNow)
             throw new ArgumentException("Publish date must be in the future");
+ 
+        Deadline.DeadlineCalculator.ValidatePublishDate(request.PublishDate, request.PublishPeriod);
 
         var schedule = new Repository.Entity.PublishingSchedule
         {
@@ -64,7 +66,7 @@ public class Service: IService
 
         await _dbContext.PublishingSchedules.AddAsync(schedule);
 
-        series.Status = SeriesStatus.Publishing;
+        series.Status = SeriesStatus.Scheduled;
         series.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _dbContext.SaveChangesAsync();
@@ -98,8 +100,8 @@ public class Service: IService
 
         var allowedRoles = new[]
         {
-            UserRole.EditorialBoard,
-            UserRole.TantouEditor,
+            UserRole.Editorial,
+            UserRole.Tantou,
             UserRole.Admin
         };
         
@@ -125,7 +127,7 @@ public class Service: IService
                           $"{p.Series.CreatedBy.FirstName}{p.Series.CreatedBy.LastName}",
             PublishDate     = p.PublishDate,
             PublishPeriod   = p.PublishPeriod,
-            DecidedByName   = $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}",
+            DecidedByName   = p.DecidedBy != null ? $"{p.DecidedBy.FirstName}{p.DecidedBy.LastName}" : string.Empty,
             CreatedAt       = p.CreatedAt,
             UpdatedAt       = p.UpdatedAt
         }).ToList();    
@@ -146,7 +148,7 @@ public class Service: IService
         if(user == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (user.Role != UserRole.EditorialBoard)
+        if (user.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
         
         var schedule =
@@ -154,6 +156,8 @@ public class Service: IService
                 .Where(p => p.Id == scheduleId)
                 .Include(p => p.Series)
                 .ThenInclude(s => s.CreatedBy)
+                .Include(p => p.Series)
+                .ThenInclude(s => s.Chapters.Where(c => !c.IsDeleted))
                 .Include(p => p.DecidedBy)
                 .OrderBy(p => p.PublishDate)
                 .FirstOrDefaultAsync();
@@ -161,8 +165,15 @@ public class Service: IService
         if(schedule == null)
             throw new KeyNotFoundException("Publishing schedule not found");
         
-        if(schedule.Series.Status != SeriesStatus.Publishing)
-            throw new InvalidOperationException($"Series must be in publishing status. Current status{schedule.Series.Status}");
+        //
+        if(schedule.Series.Status != SeriesStatus.Scheduled)
+            throw new InvalidOperationException($"Series must be in scheduled  status. Current status{schedule.Series.Status}");
+        
+        var newPublishPeriod = request.PublishPeriod ?? schedule.PublishPeriod;
+        
+        Deadline.DeadlineCalculator.ValidatePublishDate(request.PublishDate, newPublishPeriod);
+        
+        schedule.PublishDate = request.PublishDate;
         
         if(request.PublishDate <= DateTimeOffset.UtcNow)
             throw new ArgumentException("Publish must be in the future");
@@ -173,8 +184,25 @@ public class Service: IService
             schedule.PublishPeriod = request.PublishPeriod;
         
         schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
         await _dbContext.SaveChangesAsync();
 
+        var chaptersToRecalculate = schedule.Series.Chapters
+            .Where(c => c.Status == ChapterStatus.Created || c.Status == ChapterStatus.Processing)
+            .ToList();
+
+        foreach (var chapter in chaptersToRecalculate)
+        {
+            chapter.Deadline = Deadline.DeadlineCalculator.CalculateDeadline(
+                schedule.PublishDate,
+                schedule.PublishPeriod,
+                chapter.ChapterNumber);
+
+            chapter.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        
         return new Response.GetPublishingScheduleResponse()
         {
             ScheduleId = schedule.Id,
@@ -209,7 +237,7 @@ public class Service: IService
         if(user == null)
             throw new UnauthorizedAccessException("User not found");
 
-        if (user.Role != UserRole.EditorialBoard)
+        if (user.Role != UserRole.Editorial)
             throw new UnauthorizedAccessException("Only EditorialBoard must be update publish schedule.");
         
         var schedule =

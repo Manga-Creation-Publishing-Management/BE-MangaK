@@ -1,6 +1,8 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
+using Google.Apis.Auth;
 using Manga.Repository.Data;
 using Manga.Repository.Entity;
+using Manga.Repository.Entity.Enums;
 using Manga.Service.MailService;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,17 +13,19 @@ public class Service : IService
     private readonly AppDbContext _dbContext;
     private readonly JwtService.IService _jwtService;
     private readonly MailService.IService _mailService;
+    private readonly GoogleAuthService.IService _googleAuthService;
 
-    public Service(AppDbContext dbContext, JwtService.IService jwtService, MailService.IService mailService)
+    public Service(AppDbContext dbContext, JwtService.IService jwtService, MailService.IService mailService, GoogleAuthService.IService googleAuthService)
     {
         _dbContext = dbContext;
         _jwtService = jwtService;
         _mailService = mailService;
+        _googleAuthService = googleAuthService;
     }
 
     public async Task<Response.LoginResponse> Login(Request.LoginRequest request)
     {
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email && x.IsDeleted == false && x.Status == UserStatus.Active);
         if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid email or password");
@@ -52,13 +56,15 @@ public class Service : IService
             Id = Guid.NewGuid(),
             UserId = user.Id,
             User = user,
+            ReaderId = null,
+            Reader = null,
             DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeOffset.UtcNow
         };
-        _dbContext.Add(session);
+        _dbContext.UserSessions.Add(session); 
         await _dbContext.SaveChangesAsync();
 
         return new Response.LoginResponse()
@@ -75,7 +81,7 @@ public class Service : IService
         };
     }
 
-    public async Task<Response.RegistrationResponse> Register(Request.RegisterRequest request)
+    public async Task<Response.RegistrationResponse> Register(Request.RegisterRequest request, UserRole role)
     {
         var emailExist = await _dbContext.Users.AnyAsync(u => u.Email == request.Email);
         if (emailExist)
@@ -101,7 +107,9 @@ public class Service : IService
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Phone = request.Phone ?? "",
-            Role = request.Role,
+            AuthorName = request.AuthorName ?? "",
+            SupervisorId = request.SupervisorId,
+            Role = role,
             Verified = true,
             Status = request.Status,
             CreatedAt = DateTime.UtcNow
@@ -118,19 +126,85 @@ public class Service : IService
         };
     }
 
-    public Task<Response.RegisterReaderResponse> RegisterReader(Request.RegisterReaderRequest request)
+    public async Task<Response.LoginByGoogleResponse> LoginByGoogle(Request.LoginByGoogleRequest request)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var payload = await _googleAuthService.ValidateAsync(request.IdTokenGoogle);
+            var email = payload.Email;
+            var name = payload.Name;
+            var avatarUrl = payload.Picture;
+            var googleId = payload.Subject;
+            
+            var user = await _dbContext.Readers.FirstOrDefaultAsync(x => x.GoogleAccountId == googleId);
+            if (user == null)
+            {
+                user = new Reader()
+                {
+                    GoogleAccountId = googleId,
+                    Email = email,
+                    Name = name,
+                    AvatarUrl = avatarUrl,
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+                _dbContext.Readers.Add(user); 
+                await _dbContext.SaveChangesAsync();
+            }
+            else if (user.Status == UserStatus.Inactive)
+            {
+                throw new UnauthorizedAccessException("Account is inactive.");
+            }
+            var claim = new List<Claim>
+            {
+                new Claim("UserId", user.Id.ToString()),
+                new Claim("Email", user.Email),
+                new Claim(ClaimTypes.Role, "Reader")
+            };
+
+            var accessToken = _jwtService.GenerateAccessToken(claim);
+            var refreshToken = _jwtService.GenerateRefreshToken();
+
+            var session = new UserSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = null,
+                User = null,
+                ReaderId = user.Id,
+                Reader = user,
+                DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                IsRevoked = false,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _dbContext.Add(session);
+            await _dbContext.SaveChangesAsync();
+            return new Response.LoginByGoogleResponse()
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Name = user.Name ?? string.Empty,
+                Role = "Reader",
+                Status = user.Status,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+        }
+        catch (InvalidJwtException)
+        {
+           throw new Exception("Invalid jwt token or expired");
+        }
     }
 
     public async Task<Response.LoginResponse> RefreshToken(Request.RefreshTokenRequest request)
     {
         var session = await _dbContext.UserSessions
                           .Include(x => x.User)
+                          .Include(x => x.Reader)
                           .FirstOrDefaultAsync(x =>
                           x.RefreshToken == request.RefreshToken && !x.IsRevoked)
                       ?? throw new UnauthorizedAccessException("Invalid refresh token or session has expired");
-        if (session.ExpiresAt < DateTime.UtcNow)
+        if (session.ExpiresAt < DateTimeOffset.UtcNow)
         {
             session.IsRevoked = true;
             await _dbContext.SaveChangesAsync();
@@ -144,46 +218,74 @@ public class Service : IService
             throw new UnauthorizedAccessException("Access denied. Your session is invalid or has expired.");
         }
 
-        var user = session.User;
         session.IsRevoked = true;
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         var newSession = new UserSession
         {
             Id = Guid.NewGuid(),
-            UserId = user.Id,
-            User = user,
             DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
             RefreshToken = newRefreshToken,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             IsRevoked = false,
             CreatedAt = DateTime.UtcNow
         };
-        _dbContext.UserSessions.AddAsync(newSession);
-        await _dbContext.SaveChangesAsync();
-        var claim = new List<Claim>
+        var claim = new List<Claim>();
+        var response = new Response.LoginResponse();
+        
+        if (session.UserId != null)
         {
-            new Claim("UserId", user.Id.ToString()),
-            new Claim("Email", user.Email),
-            new Claim(ClaimTypes.Role, user.Role.ToString())
-        };
+            newSession.UserId = session.UserId;
+            newSession.User = session.User;
+
+            claim.AddRange(new[] {
+                new Claim("UserId", session.User!.Id.ToString()),
+                new Claim("Email", session.User.Email),
+                new Claim(ClaimTypes.Role, session.User.Role.ToString())
+            });
+
+            response = new Response.LoginResponse
+            {
+                UserId = session.User.Id,
+                Email = session.User.Email,
+                FirstName = session.User.FirstName,
+                LastName = session.User.LastName,
+                Role = session.User.Role.ToString()
+            };
+        }else if (session.ReaderId != null)
+        {
+            newSession.ReaderId = session.ReaderId;
+            newSession.Reader = session.Reader;
+
+            claim.AddRange(new[] {
+                new Claim("UserId", session.Reader!.Id.ToString()),
+                new Claim("Email", session.Reader.Email),
+                new Claim(ClaimTypes.Role, "Reader")
+            });
+
+            response = new Response.LoginResponse
+            {
+                UserId = session.Reader.Id,
+                Email = session.Reader.Email,
+                FirstName = session.Reader.Name ?? string.Empty, 
+                LastName = "",
+                Role = "Reader"
+            };
+        }
+        _dbContext.UserSessions.Add(newSession); 
+        await _dbContext.SaveChangesAsync();
 
         var accessToken = _jwtService.GenerateAccessToken(claim);
-        return new Response.LoginResponse()
-        {
-            UserId = user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Role = user.Role.ToString(),
-            AccessToken = accessToken,
-            RefreshToken = newRefreshToken,
-        };
+        
+        response.AccessToken = accessToken;
+        response.RefreshToken = newRefreshToken;
+
+        return response;
     }
 
     public async Task<String> ForgotPassword(Request.ForgotPasswordRequest request)
     {
-        var user = _dbContext.Users.FirstOrDefault(x => x.Email == request.Email);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Email == request.Email);
         if (user == null)
         {
             throw new ArgumentException("Email does not used");

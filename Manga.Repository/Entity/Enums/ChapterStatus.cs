@@ -3,7 +3,9 @@
 public enum ChapterStatus
 {
     Created = 1,
+    Pending,
     Processing,
+    Scheduled,
     Publishing,
     Rejected
 }

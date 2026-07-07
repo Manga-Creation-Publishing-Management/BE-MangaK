@@ -11,9 +11,12 @@ public class Response
         public required string Title { get; set; }
         public string? Summary { get; set; }
         public string? ManuscriptFileUrl { get; set; }
+        public string? ChapterFileUrl { get; set; }
+        public int? TotalPage { get; set; } //
         public ChapterStatus Status { get; set; }
         public Guid SeriesId { get; set; }
         public string SeriesTitle { get; set; } = string.Empty;
+        public DateTimeOffset Deadline { get; set; }
         public DateTimeOffset CreateAt { get; set; }
     }
     
@@ -23,6 +26,7 @@ public class Response
         public int ChapterNumber { get; set; }
         public required string Title { get; set; }
         public string? Summary { get; set; }
+        public int? TotalPage { get; set; } //
         public ChapterStatus Status { get; set; }
         public int TotalTask { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
@@ -36,12 +40,16 @@ public class Response
         public string? Summary { get; set; }
         public string? ManuscriptFileUrl { get; set; }
         public string? ChapterFileUrl { get; set; }
+        public int? TotalPage { get; set; } //
         public ChapterStatus Status { get; set; }
         public Guid SeriesId { get; set; }
         public string SeriesTitle { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset? Deadline { get; set; }
         public List<TaskSummary> Tasks { get; set; } = new();
+        public double AverageRate { get; set; }
+        public int TotalVotes { get; set; }
     }
     
     public class TaskSummary
@@ -54,4 +62,23 @@ public class Response
         public string AssignedTo { get; set; } = string.Empty;
     }
     
+    public class UpdateChapterResponse
+    {
+        public Guid ChapterId { get; set; }
+        public int ChapterNumber { get; set; }
+        public required string Title { get; set; }
+        public string? Summary { get; set; }
+        public string? ManuscriptFileUrl { get; set; }
+        public string? ChapterFileUrl { get; set; }  
+        public int? TotalPage { get; set; } //
+        public ChapterStatus Status { get; set; }
+        public Guid SeriesId { get; set; }
+        public string SeriesTitle { get; set; } = string.Empty;
+        public string UpdatedByName { get; set; } = string.Empty;
+        public string? Feedback { get; set; } //
+        public bool FeedbackCreated { get; set; }// 
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public List<TaskSummary> Tasks { get; set; } = new();
+    }
 }

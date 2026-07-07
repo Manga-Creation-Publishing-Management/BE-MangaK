@@ -1,9 +1,8 @@
-﻿using CloudinaryDotNet;
+using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Manga.Service.MediaService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Manga.Service.MediaService;
 
 namespace Manga.Service.CloudinaryService;
 
@@ -68,7 +67,7 @@ public class Service:IService
         return (uploadResult.SecureUrl.ToString(), uploadResult.PublicId);
     }
  
-    public async Task DeleteFileAsync(string publicId)
+    public async  Task DeleteFileAsync(string publicId)
     {
         var deleteParams = new DeletionParams(publicId)
         {

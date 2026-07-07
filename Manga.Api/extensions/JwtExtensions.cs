@@ -57,10 +57,10 @@ public static class JwtExtensions
                 policy.RequireRole("Assistant"));
             
             options.AddPolicy(TantouEditortPolicy, policy =>
-                policy.RequireRole("TantouEditor"));
+                policy.RequireRole("Tantou"));
             
             options.AddPolicy(EditorialBoardPolicy, policy =>
-                policy.RequireRole("EditorialBoard"));
+                policy.RequireRole("Editorial"));
 
             options.AddPolicy(ReaderPolicy, policy =>
                 policy.RequireRole("Reader"));

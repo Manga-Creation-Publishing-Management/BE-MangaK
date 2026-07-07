@@ -1,4 +1,5 @@
 using MailKit;
+using Manga.Api.BackgroundJobs;
 using Manga.Api.extensions;
 using Manga.Middlewares;
 using Manga.Repository.Data;
@@ -11,8 +12,15 @@ using SeriesService = Manga.Service.Series;
 using JwtService = Manga.Service.JwtService;
 using AuthService = Manga.Service.Auth;
 using MailService = Manga.Service.MailService;
+using MangaTaskService = Manga.Service.MangaTask;
 using CategoryService = Manga.Service.Category;
 using PublishingScheduleService = Manga.Service.PublishingSchedule;
+using UserProfileService = Manga.Service.UserProfile;
+using IncomeTaskService = Manga.Service.IncomeTask;
+using GoogleAuthService = Manga.Service.GoogleAuthService;
+using ChapterVotingService = Manga.Service.ChapterVoting;
+using FeedbackService = Manga.Service.Feedback;
+using LeaderboardService = Manga.Service.Leaderboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,8 +41,20 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
 builder.Services.AddScoped<ChapterService.IService, ChapterService.Service>();
 builder.Services.AddScoped<SeriesService.IService, SeriesService.Service>();
+builder.Services.AddScoped<MangaTaskService.IService, MangaTaskService.Service>();
 builder.Services.AddScoped<MediaService.IService, CloudinaryService.Service>();
+builder.Services.AddScoped<IncomeTaskService.IService, IncomeTaskService.Service>();
 builder.Services.AddScoped<CategoryService.IService, CategoryService.Service>();
+builder.Services.AddScoped<UserProfileService.IService, UserProfileService.Service>();
+builder.Services.AddScoped<GoogleAuthService.IService, GoogleAuthService.Service>();
+builder.Services.AddScoped<ChapterVotingService.IService, ChapterVotingService.Service>();
+builder.Services.AddScoped<FeedbackService.IService, FeedbackService.Service>();
+builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
+builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
+builder.Services.AddScoped<MailService.IService, MailService.Service>();
+builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
+builder.Services.AddScoped<LeaderboardService.IService, LeaderboardService.Service>();
+builder.Services.AddHostedService<DeadlineCheckerService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -45,10 +65,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
 
-builder.Services.AddScoped<AuthService.IService, AuthService.Service>();
-builder.Services.AddScoped<JwtService.IService, JwtService.Service>();
-builder.Services.AddScoped<MailService.IService, MailService.Service>();
-builder.Services.AddScoped<PublishingScheduleService.IService, PublishingScheduleService.Service>();
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
@@ -66,8 +83,6 @@ builder.Services.AddCors(options =>
 });
 
 //AI
-
-
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -75,8 +90,6 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await AppDbContextSeed.SeedAsync(db);
 }
-
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -86,6 +99,7 @@ if (app.Environment.IsDevelopment())
 //AI
 app.UseCors("AllowFrontend");
 //AI
+//Testing
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseAuthentication();
