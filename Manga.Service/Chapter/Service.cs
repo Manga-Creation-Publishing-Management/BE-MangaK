@@ -134,7 +134,7 @@ public class Service: IService
         var chapter = await _dbContext.Chapters
             .Where(c => c.SeriesId == seriesId && !c.IsDeleted)
             .Include(c => c.MangaTasks)
-            .OrderBy(c => c.ChapterNumber)
+            .OrderByDescending(c => c.ChapterNumber)
             .ToListAsync();
 
         var result = chapter.Select(c => new Response.GetAllChaptersResponse()
@@ -251,19 +251,26 @@ public class Service: IService
         {
             if (!request.Status.HasValue)
                 throw new ArgumentException("Status is required");
+            
+            if (chapter.Series.Status != SeriesStatus.Scheduled && chapter.Series.Status != SeriesStatus.Publishing)
+                throw new ArgumentException("Series must be Scheduled or Publishing for Tantou to review chapter.");
+            
+            if (chapter.Status != ChapterStatus.Pending)
+                throw new ArgumentException("Chapter must be in Pending status for Tantou to review.");
 
-            if (chapter.Series.Status != SeriesStatus.Publishing)
-                throw new ArgumentException("Tantou can only set status to Publishing when series is Publishing");
-            
-            
-            if (chapter.Status == ChapterStatus.Pending)
+            if (request.Status.Value == ChapterStatus.Rejected)
             {
-                if (request.Status.Value != ChapterStatus.Rejected &&
-                    request.Status.Value != ChapterStatus.Publishing)
-                    throw new ArgumentException("Tantou can only set status to Rejected and Publishing when chapter is Pending");
+                chapter.Status = ChapterStatus.Rejected;
             }
-            
-            chapter.Status = request.Status.Value;
+            else if (request.Status.Value == ChapterStatus.Scheduled)
+            {
+                
+                chapter.Status = ChapterStatus.Scheduled;
+            }
+            else
+            {
+                throw new ArgumentException("Tantou can only set chapter status to Scheduled or Rejected.");
+            }
         }
         
         chapter.UpdatedAt = DateTimeOffset.UtcNow;
