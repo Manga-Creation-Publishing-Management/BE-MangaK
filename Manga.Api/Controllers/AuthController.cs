@@ -27,12 +27,18 @@ public class AuthController : ControllerBase
     }
 
     [Authorize(Policy = JwtExtensions.AdminPolicy)]
-
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Request.RegisterRequest request, UserRole role)
     {
         var result = await _identityService.Register(request, role);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Register Successfully!", HttpContext.TraceIdentifier));
+    }
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] Request.LoginByGoogleRequest request)
+    {
+        var result = await _identityService.LoginByGoogle(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Login By Google Successfully!", HttpContext.TraceIdentifier));
     }
 
     [HttpPost("logout")]

@@ -5,6 +5,7 @@ public enum SeriesStatus
     Processing = 1,
     Approved,
     Pending,
+    Scheduled,  
     Publishing,
     Rejected,
     Cancelled,

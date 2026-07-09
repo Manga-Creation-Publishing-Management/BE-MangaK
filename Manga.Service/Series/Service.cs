@@ -130,9 +130,11 @@ public class Service: IService
         var series = await _dbContext.Series
             .Where(s => s.Id == seriesId && !s.IsDeleted)
             .Include(s => s.CreatedBy)
+            .Include(s => s.PublishingSchedule)
             .Include(s => s.CategorySeries)
                 .ThenInclude(cs => cs.Category) 
             .Include(s => s.Chapters.Where(c => !c.IsDeleted))
+            .OrderByDescending(s => s.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (series == null)
@@ -159,6 +161,8 @@ public class Service: IService
             NameFile = series.NameFile,
             Status   = series.Status,
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,
+            PublishDate = series.PublishingSchedule?.PublishDate,
+            PublishPeriod = series.PublishingSchedule?.PublishPeriod,
             CreateAt = series.CreatedAt,
             Chapters =  chapters
         };
@@ -217,18 +221,35 @@ public class Service: IService
         
         if(series.Status != SeriesStatus.Processing)
             throw new UnauthorizedAccessException($"Series must be in processing status. Current status is: {series.Status}");
-
-
         if (request.IsApproved)
         {
             series.Status = SeriesStatus.Pending;
             series.ReviewedById = userIdGuid;
-        }
-        else
+        }else
         {
             series.Status = SeriesStatus.Rejected;
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        
+        if (!string.IsNullOrWhiteSpace(request.Note))
+        {
+            var feedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = editor.Id,
+                Content   = request.Note,
+                SeriesId  = series.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        //
+        
         await _dbContext.SaveChangesAsync();
 
         return new Response.ReviewSeriesResponse()
@@ -237,6 +258,7 @@ public class Service: IService
             Title = series.Title,
             Status = series.Status,
             Note = request.Note,
+            FeedbackCreated = feedbackCreated,
             ReviewerName = $"{editor.FirstName} {editor.LastName}",
             ReviewerRole = editor.Role.ToString(),
             UpdatedAt = series.UpdatedAt.Value
@@ -279,6 +301,26 @@ public class Service: IService
             series.Status = SeriesStatus.Rejected;
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        //
+        var feedbackCreated = false;
+        
+        if (!string.IsNullOrWhiteSpace(request.Note))
+        {
+            var feedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = board.Id,
+                Content   = request.Note,
+                SeriesId  = series.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await _dbContext.Feedbacks.AddAsync(feedback);
+            feedbackCreated = true;
+        }
+        //
+        
         await _dbContext.SaveChangesAsync();
         
         return new Response.ReviewSeriesResponse
@@ -287,6 +329,7 @@ public class Service: IService
             Title        = series.Title,
             Status       = series.Status,
             Note         = request.Note,
+            FeedbackCreated = feedbackCreated,
             ReviewerName = $"{board.FirstName} {board.LastName}",
             ReviewerRole = nameof(UserRole.Editorial),
             UpdatedAt    = series.UpdatedAt.Value
@@ -369,5 +412,155 @@ public class Service: IService
             TotalChapters = s.Chapters.Count(c => !c.IsDeleted),
             CreateAt = s.CreatedAt
         }).ToList();
+    }
+
+    public async Task<Response.CancelSeriesResponse> CancelSeries(Guid seriesId, Request.CancelSeriesRequest request)
+    {
+        var userId = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(c => c.Type == "userId" || c.Type == "UserId")?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException("User not login");
+
+        var userIdGuid = Guid.Parse(userId);
+        
+        var board = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+
+        if (board == null)
+            throw new UnauthorizedAccessException("User not found");
+        
+        if (board.Role != UserRole.Editorial)
+            throw new UnauthorizedAccessException("Only EditorialBoard can cancel series");
+        
+        var series = await _dbContext.Series
+            .Include(s => s.PublishingSchedule)
+            .FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
+
+        if (series == null)
+            throw new KeyNotFoundException("Series not found");
+        
+        if (series.Status == SeriesStatus.Cancelled)
+            throw new InvalidOperationException("Series is already cancelled");
+
+        if (series.Status == SeriesStatus.Rejected)
+            throw new InvalidOperationException("Cannot cancel a rejected series");
+        
+        if (series.PublishingSchedule != null && !series.PublishingSchedule.IsDeleted)
+        {
+            series.PublishingSchedule.IsDeleted = true;
+            series.PublishingSchedule.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        
+        series.Status = SeriesStatus.Cancelled;
+        series.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        return new Response.CancelSeriesResponse
+        {
+            SeriesId        = series.Id,
+            Title           = series.Title,
+            Status          = series.Status,
+            Reason          = request.Reason,
+            CancelledByName = board.AuthorName ?? $"{board.FirstName} {board.LastName}",
+            CancelledAt     = series.UpdatedAt!.Value
+        };
+    }
+
+    public async Task<object> SearchSeriesByVoting(Request.SearchSeriesByVotingRequest request)
+    {
+        if (request.MinRate < 0 || request.MaxRate > 5 || request.MinRate > request.MaxRate)
+            throw new ArgumentException(
+                "MinRate must be 0-5, MaxRate must be 0-5 and MinRate cannot be greater than MaxRate");
+        
+        var now = DateTimeOffset.UtcNow;
+        
+        var seriesList = await _dbContext.Series
+            .Where(s => s.Status == SeriesStatus.Publishing && !s.IsDeleted)
+            .Include(s => s.PublishingSchedule)
+            .Include(s => s.Chapters.Where(c => !c.IsDeleted))
+            .ThenInclude(c => c.ChapterVotes)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+        
+        if (request.RankingType == "Weekly")
+            return GetWeeklyRanking(seriesList, now, request.MinRate, request.MaxRate);
+
+        if (request.RankingType == "Monthly")
+            return GetMonthlyRanking(seriesList, now, request.MinRate, request.MaxRate);
+
+        // Both là cả weekly và monthly
+        return new Response.SearchSeriesByVotingResponse
+        {
+            WeeklyRanking  = GetWeeklyRanking(seriesList, now, request.MinRate, request.MaxRate),
+            MonthlyRanking = GetMonthlyRanking(seriesList, now, request.MinRate, request.MaxRate),
+        };
+    }
+    
+    private List<ChapterVoting.Response.WeeklyRankingResponse> GetWeeklyRanking(
+        List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
+    {
+        return seriesList
+            .Where(s => s.PublishingSchedule?.PublishPeriod == "Weekly")
+            .Select(series =>
+            {
+                var publishDate       = series.PublishingSchedule!.PublishDate;
+                var daysPassed        = (now - publishDate).TotalDays;
+                var weeklyPeriodStart = publishDate.AddDays((int)(daysPassed / 7) * 7);
+                var weeklyPeriodEnd   = weeklyPeriodStart.AddDays(7);
+
+                var weeklyVotes = series.Chapters
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v => v.VoteAt >= weeklyPeriodStart && v.VoteAt < weeklyPeriodEnd)
+                    .ToList();
+
+                return new ChapterVoting.Response.WeeklyRankingResponse
+                {
+                    SeriesId          = series.Id,
+                    Title             = series.Title,
+                    CoverFile         = series.CoverFile,
+                    WeeklyAverageRate = weeklyVotes.Count > 0 ? Math.Round(weeklyVotes.Average(v => v.Rate), 2) : 0,
+                    WeeklyTotalVotes  = weeklyVotes.Count,
+                    WeeklyPeriodStart = weeklyPeriodStart,
+                    WeeklyPeriodEnd   = weeklyPeriodEnd,
+                };
+            }).Where(r => r.WeeklyAverageRate >= minRate && r.WeeklyAverageRate <= maxRate)
+            .OrderByDescending(r => r.WeeklyAverageRate)
+            .ThenByDescending(r => r.WeeklyTotalVotes)
+            .ToList();
+    }
+
+    private List<ChapterVoting.Response.MonthlyRankingResponse> GetMonthlyRanking(
+         List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
+    {
+        return seriesList
+            .Where(s => s.PublishingSchedule?.PublishPeriod == "Monthly")
+            .Select(series =>
+            {
+                var publishDate        = series.PublishingSchedule!.PublishDate;
+                var daysPassed         = (now - publishDate).TotalDays;
+                var monthlyPeriodStart = publishDate.AddDays((int)(daysPassed / 30) * 30);
+                var monthlyPeriodEnd   = monthlyPeriodStart.AddDays(30);
+
+                var monthlyVotes = series.Chapters
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v => v.VoteAt >= monthlyPeriodStart && v.VoteAt < monthlyPeriodEnd)
+                    .ToList();
+
+                return new ChapterVoting.Response.MonthlyRankingResponse
+                {
+                    SeriesId           = series.Id,
+                    Title              = series.Title,
+                    CoverFile          = series.CoverFile,
+                    MonthlyAverageRate = monthlyVotes.Count > 0 ? Math.Round(monthlyVotes.Average(v => v.Rate), 2) : 0,
+                    MonthlyTotalVotes  = monthlyVotes.Count,
+                    MonthlyPeriodStart = monthlyPeriodStart,
+                    MonthlyPeriodEnd   = monthlyPeriodEnd,
+                };
+            })
+            .Where(r => r.MonthlyAverageRate >= minRate && r.MonthlyAverageRate <= maxRate)
+            .OrderByDescending(r => r.MonthlyAverageRate)
+            .ThenByDescending(r => r.MonthlyTotalVotes)
+            .ToList();
     }
 }

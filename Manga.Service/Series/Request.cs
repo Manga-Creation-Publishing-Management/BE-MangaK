@@ -23,4 +23,16 @@ public class Request
     {
         public required List<Guid> CategoryIds { get; set; }
     }
+    
+    public class CancelSeriesRequest
+    {
+        public required string Reason { get; set; }
+    }
+
+    public class SearchSeriesByVotingRequest
+    {
+        public double MinRate { get; set; } = 0;
+        public double MaxRate { get; set; } = 5;
+        public string RankingType { get; set; } = "Both";
+    }
 }

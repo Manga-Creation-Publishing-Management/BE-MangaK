@@ -1,4 +1,6 @@
-﻿namespace Manga.Service.IncomeTask;
+using Manga.Repository.Entity.Enums;
+
+namespace Manga.Service.IncomeTask;
 
 public class Request
 {
@@ -7,9 +9,7 @@ public class Request
     {
         public int? month { set; get; } = 0;
         public int? year { set; get; } = 0;
+        public IncomeStatus? Status { get; set; }
     }
-    public class GetIncomeHistoryRequest
-    {
-        
-    }
+    
 }

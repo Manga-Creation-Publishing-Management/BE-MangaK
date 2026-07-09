@@ -40,6 +40,8 @@ public class Response
        public string? NameFile { get; set; }
        public SeriesStatus Status { get; set; }
        public string MangakaName { get; set; } = string.Empty;
+       public DateTimeOffset? PublishDate { get; set; }
+       public string? PublishPeriod { get; set; }
        public DateTimeOffset CreateAt { get; set; }
        public List<ChapterSummary> Chapters { get; set; } = new();
     }
@@ -60,9 +62,26 @@ public class Response
         public required string Title { get; set; }
         public SeriesStatus Status { get; set; }
         public string? Note { get; set; }
+        public bool FeedbackCreated { get; set; }  //
         public string ReviewerName { get; set; } = string.Empty;
         public string ReviewerRole { get; set; } = string.Empty;
         public DateTimeOffset UpdatedAt { get; set; }
         
+    }
+    
+    public class CancelSeriesResponse
+    {
+        public Guid SeriesId { get; set; }
+        public required string Title { get; set; }
+        public SeriesStatus Status { get; set; }
+        public required string Reason { get; set; }
+        public string CancelledByName { get; set; } = string.Empty;
+        public DateTimeOffset CancelledAt { get; set; }
+    }
+
+    public class SearchSeriesByVotingResponse
+    {
+        public List<ChapterVoting.Response.WeeklyRankingResponse> WeeklyRanking { get; set; } = new();
+        public List<ChapterVoting.Response.MonthlyRankingResponse> MonthlyRanking { get; set; } = new();
     }
 }

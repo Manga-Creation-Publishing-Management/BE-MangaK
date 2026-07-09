@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Manga.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class MangaTaskController : ControllerBase
 {
     private readonly IService _mangaTaskservice;
@@ -25,8 +25,7 @@ public class MangaTaskController : ControllerBase
         var result = await _mangaTaskservice.CreateNewTask(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Create Task Successfully", HttpContext.TraceIdentifier));
     }
-    // [Authorize(Policy = JwtExtensions.MangakaPolicy) ]
-    // [Authorize(Policy = JwtExtensions.AssistantPolicy)]
+    [Authorize]
     [HttpGet("get-tasks-details")]
     public async Task<IActionResult> GetTaskDetails([FromQuery] Request.GetTaskDetailsRequest request)
     {
@@ -34,11 +33,59 @@ public class MangaTaskController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Task Details Successfully",
             HttpContext.TraceIdentifier));
     }
+    [Authorize]
     [HttpGet("get-tasks-list")]
     public async Task<IActionResult> GetTaskList([FromQuery] Request.GetTaskListRequest request)
     {
         var result = await _mangaTaskservice.GetTaskList(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get Task List Successfully",
             HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.AssistantPolicy)]
+    [HttpPut("update-task-status")]
+    public async Task<IActionResult> UpdateTaskStatus([FromBody] Request.UpdateTaskStatusRequest request)
+    {
+        var result = await _mangaTaskservice.UpdateTaskStatus(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Task Accepted Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.AssistantPolicy)]
+    [HttpPut("submit-task")]
+    public async Task<IActionResult> SubmitTask([FromForm] Request.SubmitTaskRequest request)
+    {
+        var result = await _mangaTaskservice.SubmitTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Task Submitted Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpPut("review-task")]
+    public async Task<IActionResult> ReviewTask([FromBody] Request.ReviewTaskRequest request)
+    {
+        var result = await _mangaTaskservice.ReviewTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Task Reviewed Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpPut("update-manga-task")]
+    public async Task<IActionResult> UpdateMangaTask([FromBody] Request.UpdateMangaTaskRequest request)
+    {
+        var result = await _mangaTaskservice.UpdateMangaTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Task Deadline Updated Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpGet("process-task")]
+    public async Task<IActionResult> GetProcessOfChapter([FromQuery] Request.GetTaskListRequest request)
+    {
+        var result = await _mangaTaskservice.GetTotalTask(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
+    }
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpPost("re-assign-task")]
+    public async Task<IActionResult> ReassignTask([FromBody] Request.ReassignTaskRequest request)
+    {
+        var result = await _mangaTaskservice.ReassignTaskAsync(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
     }
 }
