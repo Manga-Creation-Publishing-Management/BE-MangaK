@@ -272,6 +272,8 @@ public class Service : IService
         var userIdGuid = GetCurrentUserId();
         var task = await _dbContext.MangaTasks
             .Include(x => x.Chapter)
+            .ThenInclude(c => c.Series)
+            .ThenInclude(s => s.PublishingSchedule)
             .FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.CreatedById != userIdGuid)
@@ -295,7 +297,64 @@ public class Service : IService
             }
             else
             {
-                task.Status = MangaTaskStatus.Revising;
+                var isOverdue = currentDate >= task.Deadline;
+                if (isOverdue)
+                {
+                    var extensionCount = await _dbContext.Feedbacks.CountAsync(f => 
+                        f.MangaTaskId == task.Id && 
+                        f.Content == "Deadline Extended due to rejection" &&
+                        f.SenderId == userIdGuid);
+
+                    if (extensionCount >= 2)
+                    {
+                        task.Status = MangaTaskStatus.Unsatisfactory;
+                        task.UpdatedAt = currentDate;
+                        
+                        var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
+                        if (income != null)
+                        {
+                            income.Amount = income.Amount * 0.7m;
+                            income.Date = currentDate;
+                            income.Status = IncomeStatus.Paid;
+                        }
+                    }
+                    else
+                    {
+                        task.Status = MangaTaskStatus.Revising;
+                        
+                        var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
+                        if (!string.IsNullOrEmpty(publishPeriod))
+                        {
+                            var maxDeadline = task.Chapter!.Deadline.AddDays(-3);
+                            var extensionDays = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
+                            var newDeadline = task.Deadline.AddDays(extensionDays);
+                            
+                            if (newDeadline > maxDeadline) newDeadline = maxDeadline;
+                            if (newDeadline < currentDate) newDeadline = currentDate.AddHours(24);
+
+                            task.Deadline = newDeadline;
+                            task.UpdatedAt = currentDate;
+                            
+                            var feedback = new Repository.Entity.Feedback
+                            {
+                                Id = Guid.NewGuid(),
+                                SenderId = userIdGuid,
+                                Content = "Deadline Extended due to rejection",
+                                CreatedAt = currentDate,
+                                MangaTaskId = task.Id,
+                                ChapterId = task.ChapterId,
+                                SeriesId = task.Chapter?.SeriesId,
+                                Type = FeedbackType.StatusChange,
+                                IsRead = false
+                            };
+                            _dbContext.Feedbacks.Add(feedback);
+                        }
+                    }
+                }
+                else
+                {
+                    task.Status = MangaTaskStatus.Revising;
+                }
             }
 
             if (!string.IsNullOrEmpty(request.FeedbackContent))
@@ -309,7 +368,7 @@ public class Service : IService
                     MangaTaskId = task.Id,
                     ChapterId = task.ChapterId,
                     SeriesId = task.Chapter?.SeriesId,
-                    Type = FeedbackType.StatusChange,
+                    Type = request.IsApproved ? FeedbackType.StatusChange : FeedbackType.Manual,
                     IsRead = false
                 };
                 _dbContext.Feedbacks.Add(feedback);
@@ -395,5 +454,31 @@ public class Service : IService
             throw new UnauthorizedAccessException("You must log in");
 
         return Guid.Parse(userId);
+    }
+
+    public async Task<bool> ReassignTaskAsync(Request.ReassignTaskRequest request)
+    {
+        var userIdGuid = GetCurrentUserId();
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        if (user == null || user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka can reassign tasks.");
+
+        var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
+        if (task == null) throw new KeyNotFoundException("Task not found");
+        if (task.CreatedById != userIdGuid) throw new UnauthorizedAccessException("Only the creator can reassign this task");
+        
+        if (task.Status != MangaTaskStatus.Available && task.Status != MangaTaskStatus.Rejected)
+            throw new InvalidOperationException("Task must be in Available or Rejected status to be reassigned.");
+
+        var newAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.NewAssistantId);
+        if (newAssistant == null || newAssistant.Role != UserRole.Assistant) 
+            throw new InvalidOperationException("New assigned user must be an Assistant.");
+
+        task.AssignedToId = request.NewAssistantId;
+        task.Status = MangaTaskStatus.Available;
+        task.AssignedAt = DateTimeOffset.UtcNow;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+        return true;
     }
 }

@@ -9,6 +9,9 @@ public class Response
         public Guid Id { get; set; }
         public required Guid SenderId { get; set; }
         public string SenderName { get; set; } = string.Empty;
+        public Guid? SeriesId { get; set; }
+        public Guid? ChapterId { get; set; }
+        public Guid? MangaTaskId { get; set; }
         public string? SeriesTitle { get; set; }
         public string? ChapterTitle { get; set; }
         public string? MangaTaskTitle { get; set; }
