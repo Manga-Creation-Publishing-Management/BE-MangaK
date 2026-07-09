@@ -1,4 +1,4 @@
-﻿using Manga.Api.extensions;
+using Manga.Api.extensions;
 using Manga.Repository.Entity;
 using Manga.Service.MangaTask;
 using Manga.Service.Model;
@@ -86,6 +86,14 @@ public class MangaTaskController : ControllerBase
     public async Task<IActionResult> ReassignTask([FromBody] Request.ReassignTaskRequest request)
     {
         var result = await _mangaTaskservice.ReassignTaskAsync(request);
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Process Successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Re-assign Task Successfully", HttpContext.TraceIdentifier));
+    }
+
+    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [HttpGet("get-page-range")]
+    public async Task<IActionResult> GetPageRange([FromQuery] Request.GetPageRangeRequest request)
+    {
+        var result = await _mangaTaskservice.GetPageRange(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Page Range Successfully", HttpContext.TraceIdentifier));
     }
 }

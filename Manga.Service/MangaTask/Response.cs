@@ -57,4 +57,15 @@ public class Response
         public int Total { get; set; }
         public int NumberOfStatus { get; set; }
     }
+
+    public class GetPageRangeResponse
+    {
+        public Guid TaskId { get; set; }
+        public string TaskTitle { get; set; }
+        public int From { get; set; }
+        public int To { get; set; }
+        public MangaTaskStatus Status { get; set; }
+        public Guid AssignedToId { get; set; }
+        public string AssistantName { get; set; }
+    }
 }

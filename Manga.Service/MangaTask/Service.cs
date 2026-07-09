@@ -325,12 +325,13 @@ public class Service : IService
                         var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
                         if (!string.IsNullOrEmpty(publishPeriod))
                         {
-                            var maxDeadline = task.Chapter!.Deadline.AddDays(-3);
-                            var extensionDays = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
+                            var isWeekly = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase);
+                            var maxDeadline = task.Chapter!.Deadline.AddDays(isWeekly ? -1 : -3);
+                            var extensionDays = isWeekly ? 1 : 3;
                             var newDeadline = task.Deadline.AddDays(extensionDays);
                             
+                            if (newDeadline < currentDate.AddHours(24)) newDeadline = currentDate.AddHours(24);
                             if (newDeadline > maxDeadline) newDeadline = maxDeadline;
-                            if (newDeadline < currentDate) newDeadline = currentDate.AddHours(24);
 
                             task.Deadline = newDeadline;
                             task.UpdatedAt = currentDate;
@@ -481,5 +482,37 @@ public class Service : IService
 
         await _dbContext.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<Response.GetPageRangeResponse>> GetPageRange(Request.GetPageRangeRequest request)
+    {
+        var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId);
+        if (!chapterExists) throw new KeyNotFoundException("Chapter not found");
+
+        var tasks = await _dbContext.MangaTasks
+            .Include(t => t.AssignedTo)
+            .Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var result = new List<Response.GetPageRangeResponse>();
+        foreach (var task in tasks)
+        {
+            var parts = task.TaskDescription?.Split('-');
+            if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int from) && int.TryParse(parts[1], out int to))
+            {
+                result.Add(new Response.GetPageRangeResponse
+                {
+                    TaskId = task.Id,
+                    TaskTitle = task.TaskTitle,
+                    From = from,
+                    To = to,
+                    Status = task.Status,
+                    AssignedToId = task.AssignedToId,
+                    AssistantName = ((task.AssignedTo.FirstName ?? "") + " " + (task.AssignedTo.LastName ?? "")).Trim()
+                });
+            }
+        }
+        return result.OrderBy(x => x.From).ToList();
     }
 }

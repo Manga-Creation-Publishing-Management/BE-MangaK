@@ -60,4 +60,9 @@ public class Request
         public Guid NewAssistantId  { get; set; }
         public Guid TaskId { get; set; }
     }
+
+    public class GetPageRangeRequest
+    {
+        public Guid ChapterId { get; set; }
+    }
 }
