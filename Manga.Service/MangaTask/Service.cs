@@ -307,37 +307,49 @@ public class Service : IService
 
                     if (extensionCount >= 2)
                     {
-                        throw new InvalidOperationException("Task has already been rejected 2 times after the deadline. Cannot reject anymore.");
-                    }
-
-                    task.Status = MangaTaskStatus.Revising;
-                    
-                    var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
-                    if (!string.IsNullOrEmpty(publishPeriod))
-                    {
-                        var maxDeadline = task.Chapter!.Deadline.AddDays(-3);
-                        var extensionDays = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
-                        var newDeadline = task.Deadline.AddDays(extensionDays);
-                        
-                        if (newDeadline > maxDeadline) newDeadline = maxDeadline;
-                        if (newDeadline < currentDate) newDeadline = currentDate.AddHours(24);
-
-                        task.Deadline = newDeadline;
+                        task.Status = MangaTaskStatus.Unsatisfactory;
                         task.UpdatedAt = currentDate;
                         
-                        var feedback = new Repository.Entity.Feedback
+                        var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
+                        if (income != null)
                         {
-                            Id = Guid.NewGuid(),
-                            SenderId = userIdGuid,
-                            Content = "Deadline Extended due to rejection",
-                            CreatedAt = currentDate,
-                            MangaTaskId = task.Id,
-                            ChapterId = task.ChapterId,
-                            SeriesId = task.Chapter?.SeriesId,
-                            Type = FeedbackType.StatusChange,
-                            IsRead = false
-                        };
-                        _dbContext.Feedbacks.Add(feedback);
+                            income.Amount = income.Amount * 0.7m;
+                            income.Date = currentDate;
+                            income.Status = IncomeStatus.Paid;
+                        }
+                    }
+                    else
+                    {
+                        task.Status = MangaTaskStatus.Revising;
+                        
+                        var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
+                        if (!string.IsNullOrEmpty(publishPeriod))
+                        {
+                            var maxDeadline = task.Chapter!.Deadline.AddDays(-3);
+                            var extensionDays = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
+                            var newDeadline = task.Deadline.AddDays(extensionDays);
+                            
+                            if (newDeadline > maxDeadline) newDeadline = maxDeadline;
+                            if (newDeadline < currentDate) newDeadline = currentDate.AddHours(24);
+
+                            task.Deadline = newDeadline;
+                            task.UpdatedAt = currentDate;
+                            
+                            var feedback = new Repository.Entity.Feedback
+                            {
+                                Id = Guid.NewGuid(),
+                                SenderId = userIdGuid,
+                                Content = "Deadline Extended due to rejection",
+                                CreatedAt = currentDate,
+                                MangaTaskId = task.Id,
+                                ChapterId = task.ChapterId,
+                                SeriesId = task.Chapter?.SeriesId,
+                                Type = FeedbackType.StatusChange,
+                                IsRead = false
+                            };
+                            _dbContext.Feedbacks.Add(feedback);
+                        }
+
                     }
                 }
                 else
