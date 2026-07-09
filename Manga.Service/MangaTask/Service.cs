@@ -54,10 +54,34 @@ public class Service : IService
 
         var checkAssistant =
             await _dbContext.MangaTasks.AnyAsync(x =>
-                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id);
+                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id && x.IsDeleted == false);
         if (checkAssistant)
             throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
 
+        if (request.From <= 0)
+            throw new InvalidDataException("From page must be greater than 0.");
+        
+        if (request.To < request.From)
+            throw new InvalidDataException("To page must be greater than or equal to From page.");
+
+        if (chapter.TotalPage.HasValue && request.To > chapter.TotalPage.Value)
+            throw new InvalidDataException("To page cannot exceed the total pages of the chapter.");
+
+        var existingTasks = await _dbContext.MangaTasks
+            .Where(x => x.ChapterId == chapter.Id && x.IsDeleted == false)
+            .ToListAsync();
+            
+        foreach (var t in existingTasks)
+        {
+            var parts = t.TaskDescription?.Split('-');
+            if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int existingFrom) && int.TryParse(parts[1], out int existingTo))
+            {
+                if (request.From <= existingTo && request.To >= existingFrom)
+                {
+                    throw new InvalidOperationException($"The requested page range ({request.From}-{request.To}) overlaps with an existing task ({existingFrom}-{existingTo}).");
+                }
+            }
+        }
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
             throw new InvalidDataException("Deadline must be a future date.");
