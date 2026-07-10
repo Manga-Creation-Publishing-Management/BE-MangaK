@@ -54,10 +54,34 @@ public class Service : IService
 
         var checkAssistant =
             await _dbContext.MangaTasks.AnyAsync(x =>
-                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id);
+                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id && x.IsDeleted == false);
         if (checkAssistant)
             throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
 
+        if (request.From <= 0)
+            throw new InvalidDataException("From page must be greater than 0.");
+        
+        if (request.To < request.From)
+            throw new InvalidDataException("To page must be greater than or equal to From page.");
+
+        if (chapter.TotalPage.HasValue && request.To > chapter.TotalPage.Value)
+            throw new InvalidDataException("To page cannot exceed the total pages of the chapter.");
+
+        var existingTasks = await _dbContext.MangaTasks
+            .Where(x => x.ChapterId == chapter.Id && x.IsDeleted == false)
+            .ToListAsync();
+            
+        foreach (var t in existingTasks)
+        {
+            var parts = t.TaskDescription?.Split('-');
+            if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int existingFrom) && int.TryParse(parts[1], out int existingTo))
+            {
+                if (request.From <= existingTo && request.To >= existingFrom)
+                {
+                    throw new InvalidOperationException($"The requested page range ({request.From}-{request.To}) overlaps with an existing task ({existingFrom}-{existingTo}).");
+                }
+            }
+        }
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
             throw new InvalidDataException("Deadline must be a future date.");
@@ -307,37 +331,50 @@ public class Service : IService
 
                     if (extensionCount >= 2)
                     {
-                        throw new InvalidOperationException("Task has already been rejected 2 times after the deadline. Cannot reject anymore.");
-                    }
-
-                    task.Status = MangaTaskStatus.Revising;
-                    
-                    var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
-                    if (!string.IsNullOrEmpty(publishPeriod))
-                    {
-                        var maxDeadline = task.Chapter!.Deadline.AddDays(-3);
-                        var extensionDays = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
-                        var newDeadline = task.Deadline.AddDays(extensionDays);
-                        
-                        if (newDeadline > maxDeadline) newDeadline = maxDeadline;
-                        if (newDeadline < currentDate) newDeadline = currentDate.AddHours(24);
-
-                        task.Deadline = newDeadline;
+                        task.Status = MangaTaskStatus.Unsatisfactory;
                         task.UpdatedAt = currentDate;
                         
-                        var feedback = new Repository.Entity.Feedback
+                        var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
+                        if (income != null)
                         {
-                            Id = Guid.NewGuid(),
-                            SenderId = userIdGuid,
-                            Content = "Deadline Extended due to rejection",
-                            CreatedAt = currentDate,
-                            MangaTaskId = task.Id,
-                            ChapterId = task.ChapterId,
-                            SeriesId = task.Chapter?.SeriesId,
-                            Type = FeedbackType.StatusChange,
-                            IsRead = false
-                        };
-                        _dbContext.Feedbacks.Add(feedback);
+                            income.Amount = income.Amount * 0.7m;
+                            income.Date = currentDate;
+                            income.Status = IncomeStatus.Paid;
+                        }
+                    }
+                    else
+                    {
+                        task.Status = MangaTaskStatus.Revising;
+                        
+                        var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
+                        if (!string.IsNullOrEmpty(publishPeriod))
+                        {
+                            var isWeekly = publishPeriod.Equals("Weekly", StringComparison.OrdinalIgnoreCase);
+                            var maxDeadline = task.Chapter!.Deadline.AddDays(isWeekly ? -1 : -3);
+                            var extensionDays = isWeekly ? 1 : 3;
+                            var newDeadline = task.Deadline.AddDays(extensionDays);
+                            
+                            if (newDeadline < currentDate.AddHours(24)) newDeadline = currentDate.AddHours(24);
+                            if (newDeadline > maxDeadline) newDeadline = maxDeadline;
+
+                            task.Deadline = newDeadline;
+                            task.UpdatedAt = currentDate;
+                            
+                            var feedback = new Repository.Entity.Feedback
+                            {
+                                Id = Guid.NewGuid(),
+                                SenderId = userIdGuid,
+                                Content = "Deadline Extended due to rejection",
+                                CreatedAt = currentDate,
+                                MangaTaskId = task.Id,
+                                ChapterId = task.ChapterId,
+                                SeriesId = task.Chapter?.SeriesId,
+                                Type = FeedbackType.StatusChange,
+                                IsRead = false
+                            };
+                            _dbContext.Feedbacks.Add(feedback);
+                        }
+
                     }
                 }
                 else
@@ -469,5 +506,37 @@ public class Service : IService
 
         await _dbContext.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<Response.GetPageRangeResponse>> GetPageRange(Request.GetPageRangeRequest request)
+    {
+        var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId);
+        if (!chapterExists) throw new KeyNotFoundException("Chapter not found");
+
+        var tasks = await _dbContext.MangaTasks
+            .Include(t => t.AssignedTo)
+            .Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var result = new List<Response.GetPageRangeResponse>();
+        foreach (var task in tasks)
+        {
+            var parts = task.TaskDescription?.Split('-');
+            if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int from) && int.TryParse(parts[1], out int to))
+            {
+                result.Add(new Response.GetPageRangeResponse
+                {
+                    TaskId = task.Id,
+                    TaskTitle = task.TaskTitle,
+                    From = from,
+                    To = to,
+                    Status = task.Status,
+                    AssignedToId = task.AssignedToId,
+                    AssistantName = ((task.AssignedTo.FirstName ?? "") + " " + (task.AssignedTo.LastName ?? "")).Trim()
+                });
+            }
+        }
+        return result.OrderBy(x => x.From).ToList();
     }
 }

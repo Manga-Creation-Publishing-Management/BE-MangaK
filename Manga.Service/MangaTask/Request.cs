@@ -55,10 +55,14 @@ public class Request
         public Guid TaskId { get; set; }
         public DateTimeOffset Deadline { get; set; }
     }
-
     public class ReassignTaskRequest
     {
+        public Guid NewAssistantId  { get; set; }
         public Guid TaskId { get; set; }
-        public Guid NewAssistantId { get; set; }
+    }
+
+    public class GetPageRangeRequest
+    {
+        public Guid ChapterId { get; set; }
     }
 }
