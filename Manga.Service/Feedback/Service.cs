@@ -167,6 +167,9 @@ public class Service : IService
                 Id = f.Id,
                 SenderId = f.SenderId,
                 SenderName = ((f.Sender.FirstName ?? "") + " " + (f.Sender.LastName ?? "")).Trim(),
+                SeriesId = f.SeriesId,
+                ChapterId = f.ChapterId,
+                MangaTaskId = f.MangaTaskId,
                 SeriesTitle =  f.Series != null ? f.Series.Title : null,
                 ChapterTitle = f.Chapter != null ? f.Chapter.Title : null,
                 MangaTaskTitle = f.MangaTask != null ? f.MangaTask.TaskTitle : null,
@@ -230,6 +233,9 @@ public class Service : IService
                 Id = f.Id,
                 SenderId = f.SenderId,
                 SenderName = ((f.Sender.FirstName ?? "") + " " + (f.Sender.LastName ?? "")).Trim(),
+                SeriesId = f.SeriesId,
+                ChapterId = f.ChapterId,
+                MangaTaskId = f.MangaTaskId,
                 SeriesTitle =  f.Series != null ? f.Series.Title : null,
                 ChapterTitle = f.Chapter != null ? f.Chapter.Title : null,
                 MangaTaskTitle = f.MangaTask != null ? f.MangaTask.TaskTitle : null,
@@ -243,7 +249,7 @@ public class Service : IService
         return feedback;
     }
 
-    public async Task<Repository.Entity.Feedback> GetFeedbackAnnotation(Request.GetFeedBackRequest request)
+    public async Task<Response.GetFeedBackDetailResponse> GetFeedbackAnnotation(Request.GetFeedBackRequest request)
     {
         var userId = GetUserIdCurrent();
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
@@ -287,7 +293,22 @@ public class Service : IService
             query = query.Where(f => f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
         }
         var resultFeedback = await query.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
-        return resultFeedback;
+        return new Response.GetFeedBackDetailResponse()
+        {
+            Id = resultFeedback.Id,
+            SenderId = resultFeedback.SenderId,
+            SenderName = ((resultFeedback.Sender.FirstName ?? "") + " " + (resultFeedback.Sender.LastName ?? "")).Trim(),
+            SeriesId = resultFeedback.SeriesId,
+            ChapterId = resultFeedback.ChapterId,
+            MangaTaskId = resultFeedback.MangaTaskId,
+            SeriesTitle =  resultFeedback.Series != null ? resultFeedback.Series.Title : null,
+            ChapterTitle = resultFeedback.Chapter != null ? resultFeedback.Chapter.Title : null,
+            MangaTaskTitle = resultFeedback.MangaTask != null ? resultFeedback.MangaTask.TaskTitle : null,
+            Content = resultFeedback.Content,
+            Type = resultFeedback.Type,
+            IsRead = resultFeedback.IsRead,
+            CreatedAt = resultFeedback.CreatedAt
+        };
     }
 
     public async Task<bool> MarkAsRead(Guid feedbackId)
