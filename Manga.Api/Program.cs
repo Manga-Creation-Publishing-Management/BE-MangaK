@@ -97,8 +97,7 @@ using (var scope = app.Services.CreateScope())
     await AppDbContextSeed.SeedAsync(db);
 }
 // Configure the HTTP request pipeline.
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwaggerAPI();
 //AI
 app.UseCors("AllowFrontend");
 //AI
