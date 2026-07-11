@@ -79,7 +79,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") 
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "https://mangakk.vercel.app") 
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); 
@@ -95,11 +97,7 @@ using (var scope = app.Services.CreateScope())
     await AppDbContextSeed.SeedAsync(db);
 }
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
     app.UseSwaggerUI();
-}
 //AI
 app.UseCors("AllowFrontend");
 //AI
