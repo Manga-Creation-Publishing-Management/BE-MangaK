@@ -247,6 +247,9 @@ public class Service: IService
         if(series.Status != SeriesStatus.Processing)
             throw new UnauthorizedAccessException($"Series must be in processing status. Current status is: {series.Status}");
         
+        if (series.ReviewedById != null && series.ReviewedById != userIdGuid)
+            throw new UnauthorizedAccessException("This series is already being handled by another Tantou Editor.");
+        
         if (request.IsApproved)
         {
             series.Status = SeriesStatus.Pending;
