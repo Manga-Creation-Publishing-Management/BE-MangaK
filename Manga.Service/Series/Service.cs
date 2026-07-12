@@ -484,6 +484,20 @@ public class Service: IService
         series.Status = SeriesStatus.Cancelled;
         series.UpdatedAt = DateTimeOffset.UtcNow;
 
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            var feedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = userIdGuid,
+                Content   = request.Reason,
+                SeriesId  = series.Id,
+                CreatedAt = DateTimeOffset.UtcNow,
+                Type      = FeedbackType.StatusChange,
+                IsRead    = false,
+            };
+            await _dbContext.Feedbacks.AddAsync(feedback);
+        }
         await _dbContext.SaveChangesAsync();
 
         return new Response.CancelSeriesResponse
