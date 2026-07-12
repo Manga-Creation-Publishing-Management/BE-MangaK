@@ -117,12 +117,15 @@ public class Service: IService
             .Include(s => s.CreatedBy)
             .Include(s => s.Chapters)
             .Include(s => s.CategorySeries)
-                .ThenInclude(cs => cs.Category) 
+            .ThenInclude(cs => cs.Category) 
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (user.Role == UserRole.Mangaka)
             query = query.Where(s => s.CreatedById == userIdGuid);
+        
+        if (user.Role == UserRole.Tantou)
+            query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
         
         if (user.Role == UserRole.Reader)
             query = query.Where(s => s.Status == SeriesStatus.Publishing);
@@ -233,16 +236,13 @@ public class Service: IService
         
         var series = await _dbContext.Series
             .Include(s => s.CreatedBy)
-            .FirstOrDefaultAsync(s =>
-                s.Id == seriesId &&
-                !s.IsDeleted);
-
-        if (series == null)
+            .FirstOrDefaultAsync(s => s.Id == seriesId && !s.IsDeleted);
+        
+        if(series == null)
             throw new KeyNotFoundException("Series not found");
-
+        
         if (series.CreatedBy.SupervisorId != userIdGuid)
-            throw new UnauthorizedAccessException(
-                "You are not assigned to review this series.");
+            throw new UnauthorizedAccessException("You are not assigned to review this series.");
         
         if(series.Status != SeriesStatus.Processing)
             throw new UnauthorizedAccessException($"Series must be in processing status. Current status is: {series.Status}");
@@ -253,12 +253,13 @@ public class Service: IService
         if (request.IsApproved)
         {
             series.Status = SeriesStatus.Pending;
-            series.ReviewedById = userIdGuid;
         }else
         {
             series.Status = SeriesStatus.Rejected;
         }
-        series.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        series.ReviewedById = userIdGuid;
+        series.UpdatedAt    = DateTimeOffset.UtcNow;
         
         //
         var feedbackCreated = false;
@@ -497,7 +498,6 @@ public class Service: IService
             };
             await _dbContext.Feedbacks.AddAsync(feedback);
         }
-
         await _dbContext.SaveChangesAsync();
 
         return new Response.CancelSeriesResponse
