@@ -149,6 +149,7 @@ public class Service : IService
                 ChapterTitle = x.Chapter.Title,
                 ChapterNumber = x.Chapter.ChapterNumber,
                 ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
+                TotalPages = x.Chapter.TotalPage,
 
                 TaskTitle = x.TaskTitle,
                 TaskDescription = x.TaskDescription,
@@ -223,6 +224,7 @@ public class Service : IService
                 ChapterTitle = x.Chapter.Title,
                 ChapterNumber = x.Chapter.ChapterNumber,
                 ManuscriptFileUrl = x.Chapter.ManuscriptFileUrl,
+                TotalPages = x.Chapter.TotalPage,
 
                 TaskTitle = x.TaskTitle,
                 TaskDescription = x.TaskDescription,

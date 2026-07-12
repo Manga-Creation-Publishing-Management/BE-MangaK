@@ -27,6 +27,7 @@ public class Response
         
         public string ChapterTitle { get; set; }
         public int ChapterNumber { get; set; }
+        public int? TotalPages { get; set; }
         public string ManuscriptFileUrl { get; set; }
         
         public required string TaskTitle { get; set; }
