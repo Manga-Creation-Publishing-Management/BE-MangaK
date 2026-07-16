@@ -14,7 +14,7 @@ public class Request
     }
     public class GetFeedBackRequest
     {
-        public Guid SeriesId { get; set; }
+        public Guid? SeriesId { get; set; }
         public Guid? ChapterId { get; set; }
         public Guid? MangaTaskId { get; set; }
     }
