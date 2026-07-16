@@ -51,6 +51,16 @@ public class FeedbackController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Get feedback annotation Successfully",
             HttpContext.TraceIdentifier));
     }
+
+    [Authorize]
+    [HttpGet("get-latest-feedback")]
+    public async Task<IActionResult> GetLatestFeedback([FromQuery] Request.GetFeedBackRequest request)
+    {
+        var result = await _feedbackService.GetLatestFeedback(request);
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get latest feedback Successfully",
+            HttpContext.TraceIdentifier));
+    }
+
     [Authorize]
     [HttpPatch("mark-as-read/{feedbackId}")]
     public async Task<IActionResult> MarkAsRead([FromRoute] Guid feedbackId)
