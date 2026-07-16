@@ -21,7 +21,7 @@ public class Service : IService
         var userId = GetUserIdCurrent();
         var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
         if (user == null) throw new UnauthorizedAccessException("Unauthorized");
-        
+
         if (user.Role == UserRole.Assistant) throw new UnauthorizedAccessException("Assistant can't send feedback");
 
         Repository.Entity.Series? series = null;
@@ -36,7 +36,7 @@ public class Service : IService
                 .ThenInclude(s => s.CreatedBy)
                 .FirstOrDefaultAsync(t => t.Id == request.MangaTaskId.Value && !t.IsDeleted);
             if (task == null) throw new KeyNotFoundException("MangaTask not found");
-            
+
             series = task.Chapter?.Series;
             seriesId = series?.Id;
             chapterId = task.ChapterId;
@@ -48,7 +48,7 @@ public class Service : IService
                 .ThenInclude(s => s.CreatedBy)
                 .FirstOrDefaultAsync(c => c.Id == request.ChapterId.Value && !c.IsDeleted);
             if (chapter == null) throw new KeyNotFoundException("Chapter not found");
-            
+
             series = chapter.Series;
             seriesId = series?.Id;
         }
@@ -74,7 +74,8 @@ public class Service : IService
             if (request.MangaTaskId.HasValue)
                 throw new InvalidOperationException("Tantou cannot send feedback for tasks");
 
-            if (series.ReviewedById != user.Id && (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
+            if (series.ReviewedById != user.Id &&
+                (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
                 throw new UnauthorizedAccessException("You can only send feedback for series you review or supervise");
         }
         else if (user.Role != UserRole.Editorial && user.Role != UserRole.Admin)
@@ -117,7 +118,8 @@ public class Service : IService
         }
         else if (user.Role == UserRole.Tantou)
         {
-            if (series.ReviewedById != user.Id && (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
+            if (series.ReviewedById != user.Id &&
+                (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
                 throw new UnauthorizedAccessException("You do not supervise or review this series");
         }
         else if (user.Role == UserRole.Assistant)
@@ -126,6 +128,7 @@ public class Service : IService
             {
                 throw new UnauthorizedAccessException("Assistant can only query feedback for specific tasks");
             }
+
             var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(t => t.Id == request.MangaTaskId.Value);
             if (task == null || task.AssignedToId != user.Id)
             {
@@ -136,8 +139,9 @@ public class Service : IService
         {
             throw new UnauthorizedAccessException("You don't have permission to view feedbacks");
         }
-        
-        IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks.Where(x => x.SeriesId == request.SeriesId && x.IsDeleted == false).AsNoTracking();
+
+        IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks
+            .Where(x => x.SeriesId == request.SeriesId && x.IsDeleted == false).AsNoTracking();
         if (request.ChapterId.HasValue)
         {
             query = query.Where(x => x.ChapterId == request.ChapterId.Value);
@@ -150,18 +154,21 @@ public class Service : IService
 
         if (user.Role == UserRole.Assistant)
         {
-            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
+            query = query.Where(f =>
+                f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
         }
         else if (user.Role == UserRole.Mangaka)
         {
-            query = query.Where(f => f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id);
+            query = query.Where(f =>
+                f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id);
         }
         else if (user.Role == UserRole.Tantou)
         {
-            query = query.Where(f => f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
+            query = query.Where(f =>
+                f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
         }
 
-        var feedback = await query.Select( f => 
+        var feedback = await query.Select(f =>
             new Response.GetFeedBackDetailResponse()
             {
                 Id = f.Id,
@@ -170,7 +177,7 @@ public class Service : IService
                 SeriesId = f.SeriesId,
                 ChapterId = f.ChapterId,
                 MangaTaskId = f.MangaTaskId,
-                SeriesTitle =  f.Series != null ? f.Series.Title : null,
+                SeriesTitle = f.Series != null ? f.Series.Title : null,
                 ChapterTitle = f.Chapter != null ? f.Chapter.Title : null,
                 MangaTaskTitle = f.MangaTask != null ? f.MangaTask.TaskTitle : null,
                 Content = f.Content,
@@ -197,17 +204,17 @@ public class Service : IService
 
         if (user.Role == UserRole.Mangaka)
         {
-            query = query.Where(f => 
-                ((f.Series != null && f.Series.CreatedById == user.Id) || 
+            query = query.Where(f =>
+                ((f.Series != null && f.Series.CreatedById == user.Id) ||
                  (f.Chapter != null && f.Chapter.Series.CreatedById == user.Id) ||
-                 (f.MangaTask != null && f.MangaTask.Chapter.Series.CreatedById == user.Id)) 
+                 (f.MangaTask != null && f.MangaTask.Chapter.Series.CreatedById == user.Id))
                 && (f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id)
             );
         }
         else if (user.Role == UserRole.Tantou)
         {
-            query = query.Where(f => 
-                ((f.Series != null && f.Series.CreatedBy.SupervisorId == user.Id) || 
+            query = query.Where(f =>
+                ((f.Series != null && f.Series.CreatedBy.SupervisorId == user.Id) ||
                  (f.Chapter != null && f.Chapter.Series.CreatedBy.SupervisorId == user.Id) ||
                  (f.MangaTask != null && f.MangaTask.Chapter.Series.CreatedBy.SupervisorId == user.Id))
                 && (f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id)
@@ -219,15 +226,15 @@ public class Service : IService
         }
         else if (user.Role == UserRole.Assistant)
         {
-            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && 
+            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id &&
                                      f.Sender.Role == UserRole.Mangaka);
         }
-        else 
+        else
         {
             query = query.Where(f => f.SenderId == user.Id);
         }
 
-        var feedback = await query.OrderByDescending(f => f.CreatedAt).Select( f => 
+        var feedback = await query.OrderByDescending(f => f.CreatedAt).Select(f =>
             new Response.GetFeedBackDetailResponse()
             {
                 Id = f.Id,
@@ -236,7 +243,7 @@ public class Service : IService
                 SeriesId = f.SeriesId,
                 ChapterId = f.ChapterId,
                 MangaTaskId = f.MangaTaskId,
-                SeriesTitle =  f.Series != null ? f.Series.Title : null,
+                SeriesTitle = f.Series != null ? f.Series.Title : null,
                 ChapterTitle = f.Chapter != null ? f.Chapter.Title : null,
                 MangaTaskTitle = f.MangaTask != null ? f.MangaTask.TaskTitle : null,
                 Content = f.Content,
@@ -245,7 +252,7 @@ public class Service : IService
                 CreatedAt = f.CreatedAt
             }
         ).ToListAsync();
-        
+
         return feedback;
     }
 
@@ -266,42 +273,61 @@ public class Service : IService
         }
         else if (user.Role == UserRole.Tantou)
         {
-            if (series.ReviewedById != user.Id && (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
+            if (series.ReviewedById != user.Id &&
+                (series.CreatedBy == null || series.CreatedBy.SupervisorId != user.Id))
                 throw new UnauthorizedAccessException("You do not supervise or review this series");
-        }else if (user.Role == UserRole.Assistant)
+        }
+        else if (user.Role == UserRole.Assistant)
         {
             if (!request.MangaTaskId.HasValue)
                 throw new UnauthorizedAccessException("Assistant can only query feedback for specific tasks");
-            var mangaTask = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.MangaTaskId.Value && x.IsDeleted == false);
-            if (mangaTask == null || mangaTask.AssignedToId != userId) throw new KeyNotFoundException("You are not assigned to this task or MangaTask not found");
-        }else if (user.Role != UserRole.Editorial && user.Role != UserRole.Admin) throw new UnauthorizedAccessException("You don't have permission to view Feedback");
+            var mangaTask =
+                await _dbContext.MangaTasks.FirstOrDefaultAsync(x =>
+                    x.Id == request.MangaTaskId.Value && x.IsDeleted == false);
+            if (mangaTask == null || mangaTask.AssignedToId != userId)
+                throw new KeyNotFoundException("You are not assigned to this task or MangaTask not found");
+        }
+        else if (user.Role != UserRole.Editorial && user.Role != UserRole.Admin)
+            throw new UnauthorizedAccessException("You don't have permission to view Feedback");
 
         IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks
-            .Where(x => x.SeriesId == series.Id && x.IsDeleted == false && x.Type == FeedbackType.EditPDF).AsNoTracking();
-        if(request.ChapterId.HasValue) query = query.Where(f =>  f.ChapterId == request.ChapterId.Value);
-        if(request.MangaTaskId.HasValue) query = query.Where(f =>  f.MangaTaskId == request.MangaTaskId.Value);
+            .Include(f => f.Sender)
+            .Include(f => f.Series)      
+            .Include(f => f.Chapter)     
+            .Include(f => f.MangaTask)
+            .Where(x => x.SeriesId == series.Id && x.IsDeleted == false && x.Type == FeedbackType.EditPDF)
+            .AsNoTracking();
+        if (request.ChapterId.HasValue) query = query.Where(f => f.ChapterId == request.ChapterId.Value);
+        if (request.MangaTaskId.HasValue) query = query.Where(f => f.MangaTaskId == request.MangaTaskId.Value);
         if (user.Role == UserRole.Assistant)
         {
-            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
+            query = query.Where(f =>
+                f.MangaTask != null && f.MangaTask.AssignedToId == user.Id && f.Sender.Role == UserRole.Mangaka);
         }
         else if (user.Role == UserRole.Mangaka)
         {
-            query = query.Where(f => f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id);
+            query = query.Where(f =>
+                f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id);
         }
         else if (user.Role == UserRole.Tantou)
         {
-            query = query.Where(f => f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
+            query = query.Where(f =>
+                f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
         }
+
         var resultFeedback = await query.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
+        if (resultFeedback == null)
+            throw new KeyNotFoundException("No feedback annotations found matching the criteria.");
         return new Response.GetFeedBackDetailResponse()
         {
             Id = resultFeedback.Id,
             SenderId = resultFeedback.SenderId,
-            SenderName = ((resultFeedback.Sender.FirstName ?? "") + " " + (resultFeedback.Sender.LastName ?? "")).Trim(),
+            SenderName = ((resultFeedback.Sender.FirstName ?? "") + " " + (resultFeedback.Sender.LastName ?? ""))
+                .Trim(),
             SeriesId = resultFeedback.SeriesId,
             ChapterId = resultFeedback.ChapterId,
             MangaTaskId = resultFeedback.MangaTaskId,
-            SeriesTitle =  resultFeedback.Series != null ? resultFeedback.Series.Title : null,
+            SeriesTitle = resultFeedback.Series != null ? resultFeedback.Series.Title : null,
             ChapterTitle = resultFeedback.Chapter != null ? resultFeedback.Chapter.Title : null,
             MangaTaskTitle = resultFeedback.MangaTask != null ? resultFeedback.MangaTask.TaskTitle : null,
             Content = resultFeedback.Content,
@@ -309,6 +335,7 @@ public class Service : IService
             IsRead = resultFeedback.IsRead,
             CreatedAt = resultFeedback.CreatedAt
         };
+        
     }
 
     public async Task<bool> MarkAsRead(Guid feedbackId)
@@ -330,8 +357,8 @@ public class Service : IService
     {
         var userId = _httpContextAccessor.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
-            
-        if (string.IsNullOrEmpty(userId)) 
+
+        if (string.IsNullOrEmpty(userId))
             throw new UnauthorizedAccessException("You must log in");
 
         return Guid.Parse(userId);
