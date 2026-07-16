@@ -277,6 +277,10 @@ public class Service : IService
         }else if (user.Role != UserRole.Editorial && user.Role != UserRole.Admin) throw new UnauthorizedAccessException("You don't have permission to view Feedback");
 
         IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks
+            .Include(f => f.Sender)
+            .Include(f => f.Series)      
+            .Include(f => f.Chapter)     
+            .Include(f => f.MangaTask)
             .Where(x => x.SeriesId == series.Id && x.IsDeleted == false && x.Type == FeedbackType.EditPDF).AsNoTracking();
         if(request.ChapterId.HasValue) query = query.Where(f =>  f.ChapterId == request.ChapterId.Value);
         if(request.MangaTaskId.HasValue) query = query.Where(f =>  f.MangaTaskId == request.MangaTaskId.Value);
@@ -293,6 +297,8 @@ public class Service : IService
             query = query.Where(f => f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
         }
         var resultFeedback = await query.OrderBy(f => f.CreatedAt).FirstOrDefaultAsync();
+         if (resultFeedback == null)
+            throw new KeyNotFoundException("No feedback annotations found matching the criteria.");
         return new Response.GetFeedBackDetailResponse()
         {
             Id = resultFeedback.Id,
