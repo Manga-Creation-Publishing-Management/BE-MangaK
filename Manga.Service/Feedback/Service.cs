@@ -289,6 +289,7 @@ public class Service : IService
 
     private IQueryable<Repository.Entity.Feedback> ApplyRoleBasedFeedbackFilter(IQueryable<Repository.Entity.Feedback> query, Repository.Entity.User user)
     {
+
         if (user.Role == UserRole.Assistant)
         {
             return query.Where(f =>
@@ -304,6 +305,7 @@ public class Service : IService
             return query.Where(f =>
                 f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id);
         }
+
         return query;
     }
 
