@@ -104,14 +104,19 @@ public class Service: IService
     {
         var userId = _httpContextAccessor.HttpContext!.User.Claims
             .FirstOrDefault(x => x.Type == "userId" || x.Type == "UserId")?.Value;
-
+        
         if (string.IsNullOrEmpty(userId))
             throw new UnauthorizedAccessException("User is not login");
 
         var userIdGuid = Guid.Parse(userId);
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid)
-                   ?? throw new KeyNotFoundException("User not found");
 
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+
+        var reader = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+        
+        if (user == null && reader == null)
+            throw new KeyNotFoundException("User not found");
+        
         var query = _dbContext.Series
             .Where(s => !s.IsDeleted)
             .Include(s => s.CreatedBy)
@@ -121,14 +126,28 @@ public class Service: IService
             .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
-        if (user.Role == UserRole.Mangaka)
-            query = query.Where(s => s.CreatedById == userIdGuid);
+        // if (user.Role == UserRole.Mangaka)
+        //     query = query.Where(s => s.CreatedById == userIdGuid);
+        //
+        // if (user.Role == UserRole.Tantou)
+        //     query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
+        //
+        // if (reader != null)
+        //     query = query.Where(s => s.Status == SeriesStatus.Publishing);
         
-        if (user.Role == UserRole.Tantou)
-            query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
-        
-        if (user.Role == UserRole.Reader)
+        if (user != null)
+        {
+            if (user.Role == UserRole.Mangaka)
+                query = query.Where(s => s.CreatedById == userIdGuid);
+
+            if (user.Role == UserRole.Tantou)
+                query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
+        }
+
+        if (reader != null)
+        {
             query = query.Where(s => s.Status == SeriesStatus.Publishing);
+        }
         
         var seriesList = await query.ToListAsync();
         
