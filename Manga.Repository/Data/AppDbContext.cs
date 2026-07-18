@@ -151,7 +151,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Feedback>(builder =>
         {
-            builder.Property(f => f.Content).IsRequired().HasMaxLength(3000);
+            builder.Property(f => f.Content).IsRequired();
             builder.Property(f => f.Type).IsRequired().HasConversion<string>().HasMaxLength(50)
                 .HasDefaultValue(FeedbackType.Manual);
             builder.Property(f => f.IsRead).IsRequired().HasDefaultValue(false);

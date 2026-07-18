@@ -8,5 +8,5 @@ public enum MangaTaskStatus
     Completed, 
     Revising,
     Pending,
-    Unsatisfactory
+    Unsatisfied
 }

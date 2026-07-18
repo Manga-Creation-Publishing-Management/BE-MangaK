@@ -10,6 +10,7 @@ public class MangaTask: BaseEntity<Guid>, IAuditableEntity
     public string? submittedFileUrl  { get; set; }
     public MangaTaskStatus Status { get; set; }
     public DateTimeOffset Deadline { get; set; }
+    public int RejectCount { get; set; } = 0;
     public DateTimeOffset? AssignedAt { get; set; }
     public DateTimeOffset? SubmittedAt { get; set; }
     

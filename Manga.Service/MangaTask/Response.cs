@@ -36,6 +36,7 @@ public class Response
         public DateTimeOffset? Deadline { get; set; }
         public DateTimeOffset? AssignedAt { get; set; }
         public DateTimeOffset? SubmittedAt { get; set; }
+        public int RejectCount { get; set; }
         public Guid CreatedById { get; set; }
         public Guid AssignedToId { get; set; }
         public string AssistantName { get; set; }
