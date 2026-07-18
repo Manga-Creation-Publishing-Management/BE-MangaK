@@ -11,5 +11,5 @@ public interface IService
     public Task<Response.GetTotalTaskResponse> GetTotalTask(Request.GetTaskListRequest request);
     public Task<bool> UpdateMangaTask(Request.UpdateMangaTaskRequest request);
     public Task<bool> ReassignTaskAsync(Request.ReassignTaskRequest request);
-    public Task<List<Response.GetPageRangeResponse>> GetPageRange(Request.GetPageRangeRequest request);
+    public Task<string> GetPageRange(Request.GetPageRangeRequest request);
 }
