@@ -46,8 +46,9 @@ public class Request
     public class ReviewTaskRequest
     {
         public Guid TaskId { get; set; }
-        public bool IsApproved { get; set; }
+        public MangaTaskStatus Status { get; set; }
         public string? FeedbackContent { get; set; }
+        public int? SalaryPercentage { get; set; }
     }
 
     public class UpdateMangaTaskRequest

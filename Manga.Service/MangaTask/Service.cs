@@ -157,6 +157,7 @@ public class Service : IService
                 Deadline = x.Deadline,
                 AssignedAt = x.AssignedAt,
                 SubmittedAt = x.SubmittedAt,
+                RejectCount = x.RejectCount,
 
                 CreatedById = x.CreatedById,
                 AssignedToId = x.AssignedToId,
@@ -309,7 +310,13 @@ public class Service : IService
         try
         {
             var currentDate = DateTimeOffset.UtcNow;
-            if (request.IsApproved)
+            
+            if ((request.Status == MangaTaskStatus.Revising || request.Status == MangaTaskStatus.Unsatisfied) && string.IsNullOrWhiteSpace(request.FeedbackContent))
+            {
+                throw new InvalidDataException("Feedback is required when rejecting or marking as unsatisfied.");
+            }
+
+            if (request.Status == MangaTaskStatus.Completed)
             {
                 task.Status = MangaTaskStatus.Completed;
                 var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
@@ -319,11 +326,34 @@ public class Service : IService
                     income.Status = IncomeStatus.Paid;
                 }
             }
-            else
+            else if (request.Status == MangaTaskStatus.Unsatisfied)
             {
+                if (task.RejectCount < 2) 
+                    throw new InvalidOperationException("Task must be rejected at least 2 times before marking as unsatisfied.");
+                
+                if (request.SalaryPercentage == null || request.SalaryPercentage < 0 || request.SalaryPercentage > 100)
+                    throw new InvalidDataException("Invalid salary percentage.");
+
+                task.Status = MangaTaskStatus.Unsatisfied;
+                task.UpdatedAt = currentDate;
+                
+                var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
+                if (income != null)
+                {
+                    income.Amount = income.Amount * (request.SalaryPercentage.Value / 100m);
+                    income.Date = currentDate;
+                    income.Status = IncomeStatus.Paid;
+                }
+            }
+            else if (request.Status == MangaTaskStatus.Revising)
+            {
+                task.RejectCount++;
+                task.Status = MangaTaskStatus.Revising;
+
                 var isOverdue = currentDate >= task.Deadline;
                 if (isOverdue)
                 {
+                    /*
                     var extensionCount = await _dbContext.Feedbacks.CountAsync(f => 
                         f.MangaTaskId == task.Id && 
                         f.Content == "Deadline Extended due to rejection" &&
@@ -331,7 +361,7 @@ public class Service : IService
 
                     if (extensionCount >= 2)
                     {
-                        task.Status = MangaTaskStatus.Unsatisfactory;
+                        task.Status = MangaTaskStatus.Unsatisfied; // was Unsatisfactory
                         task.UpdatedAt = currentDate;
                         
                         var income = await _dbContext.Incomes.FirstOrDefaultAsync(x => x.MangaTaskId == task.Id);
@@ -344,8 +374,7 @@ public class Service : IService
                     }
                     else
                     {
-                        task.Status = MangaTaskStatus.Revising;
-                        
+                    */
                         var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
                         if (!string.IsNullOrEmpty(publishPeriod))
                         {
@@ -374,13 +403,14 @@ public class Service : IService
                             };
                             _dbContext.Feedbacks.Add(feedback);
                         }
-
+                    /*
                     }
+                    */
                 }
-                else
-                {
-                    task.Status = MangaTaskStatus.Revising;
-                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid status for reviewing task.");
             }
 
             if (!string.IsNullOrEmpty(request.FeedbackContent))
@@ -394,7 +424,7 @@ public class Service : IService
                     MangaTaskId = task.Id,
                     ChapterId = task.ChapterId,
                     SeriesId = task.Chapter?.SeriesId,
-                    Type = request.IsApproved ? FeedbackType.StatusChange : FeedbackType.Manual,
+                    Type = request.Status == MangaTaskStatus.Completed ? FeedbackType.StatusChange : FeedbackType.Manual,
                     IsRead = false
                 };
                 _dbContext.Feedbacks.Add(feedback);
