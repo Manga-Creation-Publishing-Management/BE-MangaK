@@ -372,8 +372,6 @@ public class Service : IService
                             income.Status = IncomeStatus.Paid;
                         }
                     }
-                    else
-                    {
                     */
                         var publishPeriod = task.Chapter?.Series?.PublishingSchedule?.PublishPeriod;
                         if (!string.IsNullOrEmpty(publishPeriod))
@@ -403,9 +401,6 @@ public class Service : IService
                             };
                             _dbContext.Feedbacks.Add(feedback);
                         }
-                    /*
-                    }
-                    */
                 }
             }
             else
@@ -538,7 +533,7 @@ public class Service : IService
         return true;
     }
 
-    public async Task<List<Response.GetPageRangeResponse>> GetPageRange(Request.GetPageRangeRequest request)
+    public async Task<string> GetPageRange(Request.GetPageRangeRequest request)
     {
         var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId);
         if (!chapterExists) throw new KeyNotFoundException("Chapter not found");
@@ -549,24 +544,29 @@ public class Service : IService
             .AsNoTracking()
             .ToListAsync();
 
-        var result = new List<Response.GetPageRangeResponse>();
-        foreach (var task in tasks)
-        {
-            var parts = task.TaskDescription?.Split('-');
-            if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int from) && int.TryParse(parts[1], out int to))
-            {
-                result.Add(new Response.GetPageRangeResponse
-                {
-                    TaskId = task.Id,
-                    TaskTitle = task.TaskTitle,
-                    From = from,
-                    To = to,
-                    Status = task.Status,
-                    AssignedToId = task.AssignedToId,
-                    AssistantName = ((task.AssignedTo.FirstName ?? "") + " " + (task.AssignedTo.LastName ?? "")).Trim()
-                });
-            }
-        }
-        return result.OrderBy(x => x.From).ToList();
+        // var result = new List<Response.GetPageRangeResponse>();
+        // foreach (var task in tasks)
+        // {
+        //     var parts = task.TaskDescription?.Split('-');
+        //     if (parts != null && parts.Length == 2 && int.TryParse(parts[0], out int from) && int.TryParse(parts[1], out int to))
+        //     {
+        //         result.Add(new Response.GetPageRangeResponse
+        //         {
+        //             TaskId = task.Id,
+        //             TaskTitle = task.TaskTitle,
+        //             From = from,
+        //             To = to,
+        //             Status = task.Status,
+        //             AssignedToId = task.AssignedToId,
+        //             AssistantName = ((task.AssignedTo.FirstName ?? "") + " " + (task.AssignedTo.LastName ?? "")).Trim()
+        //         });
+        //     }
+        // }
+        // return result.OrderBy(x => x.From).ToList();
+        var descriptions = tasks
+            .Where(t => !string.IsNullOrWhiteSpace(t.TaskDescription))
+            .Select(t => $"[{t.TaskDescription}]");
+
+        return string.Join(", ", descriptions);
     }
 }
