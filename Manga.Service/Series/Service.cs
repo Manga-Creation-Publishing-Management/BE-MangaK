@@ -397,20 +397,32 @@ public class Service: IService
         
         var users = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
         
-        if(users == null)
-            throw new UnauthorizedAccessException("User not found");
+        var reader = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+
+        if (users == null)
+            throw new KeyNotFoundException("User not found");
         
-        if(users.Role == UserRole.Reader)
+        if(reader != null)
             throw new UnauthorizedAccessException("Reader is not allowed to filter series by status ");
-        var seriesList = await _dbContext.Series
+        var query = _dbContext.Series
             .Where(s => s.Status == status && !s.IsDeleted)
             .Include(s => s.CreatedBy)
             .Include(s => s.Chapters)
             .Include(s => s.CategorySeries)
             .ThenInclude(cs => cs.Category)
             .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+            .AsQueryable();
 
+        if (users.Role == UserRole.Mangaka)
+            query = query.Where(s => s.CreatedById == userIdGuid);
+        
+        if (users.Role == UserRole.Tantou)
+            query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
+        
+        var seriesList = await query
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+        
         if (!seriesList.Any())
             throw new KeyNotFoundException($"No Series found with {status}");
 
@@ -529,7 +541,8 @@ public class Service: IService
             CancelledAt     = series.UpdatedAt!.Value
         };
     }
-
+    
+    
     public async Task<object> SearchSeriesByVoting(Request.SearchSeriesByVotingRequest request)
     {
         if (request.MinRate < 0 || request.MaxRate > 5 || request.MinRate > request.MaxRate)
@@ -560,6 +573,7 @@ public class Service: IService
         };
     }
     
+
     private List<ChapterVoting.Response.WeeklyRankingResponse> GetWeeklyRanking(
         List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
     {
