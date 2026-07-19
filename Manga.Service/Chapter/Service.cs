@@ -233,19 +233,29 @@ public class Service: IService
             if (chapter.Series.CreatedById != userIdGuid)
                 throw new UnauthorizedAccessException("You are not the creator of this series");
 
+            if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
+            {
+                if (chapter.Status != ChapterStatus.Created)
+                    throw new InvalidOperationException("ManuscriptFile can only be updated when chapter status is Created.");
+
+                var uploadResult = await _mediaService.UploadFileAsync(request.ManuscriptFileUrl);
+                chapter.ManuscriptFileUrl = uploadResult.FileUrl; 
+            }
+
             if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
-                throw new ArgumentException("Chapter file is required to submit");
+            {
+                if (request.TotalPage == null || request.TotalPage <= 0)
+                    throw new ArgumentException("TotalPage is required to submit chapter");
+
+                if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
+                    throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
+
+                var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+                chapter.ChapterFileUrl = uploadResult.FileUrl;
+                chapter.TotalPage = request.TotalPage; 
+                chapter.Status = ChapterStatus.Pending;
+            }            
             
-            if (request.TotalPage == null || request.TotalPage <= 0)
-                throw new ArgumentException("TotalPage is required to submit chapter");
-
-            if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
-                throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
-
-            var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
-            chapter.ChapterFileUrl = uploadResult.FileUrl;
-            chapter.TotalPage = request.TotalPage; 
-            chapter.Status = ChapterStatus.Pending;
         }
         else if (user.Role == UserRole.Tantou)
         {
