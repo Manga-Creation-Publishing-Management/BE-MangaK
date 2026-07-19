@@ -2,6 +2,7 @@ using DotNetEnv;
 using MailKit;
 using Manga.Api.extensions;
 using Manga.Middlewares;
+using Manga.Api.BackgroundJobs;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,6 +73,9 @@ builder.Services.AddSwaggerServices();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
+
+// ─── Background Jobs ──────────────────────────────────────────────────────────
+builder.Services.AddHostedService<DeadlineCheckerService>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
 
 //AI

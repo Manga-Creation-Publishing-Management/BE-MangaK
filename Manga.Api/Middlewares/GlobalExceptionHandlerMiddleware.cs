@@ -1,4 +1,4 @@
-﻿using Manga.Service.Model;
+using Manga.Service.Model;
 
 namespace Manga.Middlewares;
 
@@ -50,6 +50,7 @@ public class GlobalExceptionHandlerMiddleware : IMiddleware
         {
             ArgumentException => StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status400BadRequest,
+            InvalidDataException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             KeyNotFoundException => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
