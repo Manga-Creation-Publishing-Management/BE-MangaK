@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Data;
+using Manga.Repository.Data;
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -233,29 +233,32 @@ public class Service: IService
             if (chapter.Series.CreatedById != userIdGuid)
                 throw new UnauthorizedAccessException("You are not the creator of this series");
 
-            if (request.ManuscriptFileUrl != null && request.ManuscriptFileUrl.Length > 0)
-            {
-                if (chapter.Status != ChapterStatus.Created)
-                    throw new InvalidOperationException("ManuscriptFile can only be updated when chapter status is Created.");
-
-                var uploadResult = await _mediaService.UploadFileAsync(request.ManuscriptFileUrl);
-                chapter.ManuscriptFileUrl = uploadResult.FileUrl; 
-            }
-
             if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
-            {
-                if (request.TotalPage == null || request.TotalPage <= 0)
-                    throw new ArgumentException("TotalPage is required to submit chapter");
-
-                if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
-                    throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
-
-                var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
-                chapter.ChapterFileUrl = uploadResult.FileUrl;
-                chapter.TotalPage = request.TotalPage; 
-                chapter.Status = ChapterStatus.Pending;
-            }            
+                throw new ArgumentException("Chapter file is required to submit");
             
+            if (request.TotalPage == null || request.TotalPage <= 0)
+                throw new ArgumentException("TotalPage is required to submit chapter");
+
+            if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
+                throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
+
+            var uploadResult = await _mediaService.UploadFileAsync(request.ChapterFileUrl);
+            chapter.ChapterFileUrl = uploadResult.FileUrl;
+            chapter.TotalPage = request.TotalPage; 
+            chapter.Status = ChapterStatus.Pending;
+            
+            var statusChangeFeedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = user.Id,
+                Content   = "Pending by Mangaka",
+                SeriesId  = chapter.SeriesId,
+                ChapterId = chapter.Id,
+                Type      = FeedbackType.StatusChange,
+                CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
+            };
+            await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
         }
         else if (user.Role == UserRole.Tantou)
         {
@@ -271,11 +274,34 @@ public class Service: IService
             if (request.Status.Value == ChapterStatus.Rejected)
             {
                 chapter.Status = ChapterStatus.Rejected;
+                var statusChangeFeedback = new Repository.Entity.Feedback
+                {
+                    Id        = Guid.NewGuid(),
+                    SenderId  = user.Id,
+                    Content   = "Rejected by Tantou",
+                    SeriesId  = chapter.SeriesId,
+                    ChapterId = chapter.Id,
+                    Type      = FeedbackType.StatusChange,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    IsRead    = false
+                };
+                await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
             }
             else if (request.Status.Value == ChapterStatus.Scheduled)
             {
-                
                 chapter.Status = ChapterStatus.Scheduled;
+                var statusChangeFeedback = new Repository.Entity.Feedback
+                {
+                    Id        = Guid.NewGuid(),
+                    SenderId  = user.Id,
+                    Content   = "Scheduled by Tantou",
+                    SeriesId  = chapter.SeriesId,
+                    ChapterId = chapter.Id,
+                    Type      = FeedbackType.StatusChange,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    IsRead    = false
+                };
+                await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
             }
             else
             {
@@ -296,6 +322,7 @@ public class Service: IService
                 Content   = request.Feedback,
                 SeriesId  = chapter.SeriesId,
                 ChapterId = chapter.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
 
