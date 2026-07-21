@@ -1,4 +1,4 @@
-﻿namespace Manga.Service.Deadline;
+namespace Manga.Service.Deadline;
 
 public static class DeadlineCalculator
 {

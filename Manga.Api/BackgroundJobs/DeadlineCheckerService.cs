@@ -155,16 +155,16 @@ public class DeadlineCheckerService : BackgroundService
             _logger.LogInformation("{Count} manga task(s) switched to Pending.", tasksToUpdate.Count);
     }
     
-    private async Task<Guid?> GetBoardUserIdAsync(AppDbContext dbContext)
+    private async Task<Guid?> GetAdminUserIdAsync(AppDbContext dbContext)
     {
-        var boardUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Editorial);
-        return boardUser?.Id;
+        var adminUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == "mangaksystem.admin@gmail.com");
+        return adminUser?.Id;
     }
 
     private async Task CheckSeriesDelaysAsync(AppDbContext dbContext, DateTimeOffset now)
     {
-        var boardUserId = await GetBoardUserIdAsync(dbContext);
-        if (boardUserId == null) return; 
+        var adminUserId = await GetAdminUserIdAsync(dbContext);
+        if (adminUserId == null) return; 
 
         var sevenDaysAgo = now.AddDays(-7);
 
@@ -181,7 +181,7 @@ public class DeadlineCheckerService : BackgroundService
                 {
                     Id = Guid.NewGuid(),
                     SeriesId = series.Id,
-                    SenderId = boardUserId.Value,
+                    SenderId = adminUserId.Value,
                     Content = "Reminder: Series is waiting for Tantou review.",
                     Type = FeedbackType.StatusChange,
                     CreatedAt = now,
@@ -203,7 +203,7 @@ public class DeadlineCheckerService : BackgroundService
                 {
                     Id = Guid.NewGuid(),
                     SeriesId = series.Id,
-                    SenderId = boardUserId.Value,
+                    SenderId = adminUserId.Value,
                     Content = "Reminder: Series is waiting for Board review.",
                     Type = FeedbackType.StatusChange,
                     CreatedAt = now,
@@ -226,7 +226,7 @@ public class DeadlineCheckerService : BackgroundService
                 {
                     Id = Guid.NewGuid(),
                     SeriesId = series.Id,
-                    SenderId = boardUserId.Value,
+                    SenderId = adminUserId.Value,
                     Content = "Reminder: Series is waiting for Schedule creation.",
                     Type = FeedbackType.StatusChange,
                     CreatedAt = now,
@@ -238,8 +238,8 @@ public class DeadlineCheckerService : BackgroundService
 
     private async Task CheckChapterTaskCreationAsync(AppDbContext dbContext, DateTimeOffset now)
     {
-        var boardUserId = await GetBoardUserIdAsync(dbContext);
-        if (boardUserId == null) return;
+        var adminUserId = await GetAdminUserIdAsync(dbContext);
+        if (adminUserId == null) return;
 
         var twelveHoursAgo = now.AddHours(-12);
 
@@ -258,7 +258,7 @@ public class DeadlineCheckerService : BackgroundService
                     Id = Guid.NewGuid(),
                     ChapterId = chapter.Id,
                     SeriesId = chapter.SeriesId,
-                    SenderId = boardUserId.Value,
+                    SenderId = adminUserId.Value,
                     Content = "Reminder: Please create a task for this chapter.",
                     Type = FeedbackType.StatusChange,
                     CreatedAt = now,
@@ -270,8 +270,8 @@ public class DeadlineCheckerService : BackgroundService
 
     private async Task CheckTaskAcceptanceAndReviewDelaysAsync(AppDbContext dbContext, DateTimeOffset now)
     {
-        var boardUserId = await GetBoardUserIdAsync(dbContext);
-        if (boardUserId == null) return;
+        var adminUserId = await GetAdminUserIdAsync(dbContext);
+        if (adminUserId == null) return;
 
         var twentyFourHoursAgo = now.AddHours(-24);
 
@@ -289,7 +289,7 @@ public class DeadlineCheckerService : BackgroundService
                 Id = Guid.NewGuid(),
                 MangaTaskId = task.Id,
                 ChapterId = task.ChapterId,
-                SenderId = boardUserId.Value,
+                SenderId = adminUserId.Value,
                 Content = "Task was rejected automatically due to no action from assistant in 24 hours. Please re-assign.",
                 Type = FeedbackType.StatusChange,
                 CreatedAt = now,
@@ -322,7 +322,7 @@ public class DeadlineCheckerService : BackgroundService
                         Id = Guid.NewGuid(),
                         MangaTaskId = task.Id,
                         ChapterId = task.ChapterId,
-                        SenderId = boardUserId.Value,
+                        SenderId = adminUserId.Value,
                         Content = "Reminder: Please review this submitted task.",
                         Type = FeedbackType.StatusChange,
                         CreatedAt = now,
