@@ -133,34 +133,41 @@ public class Service : IService
 
         if (user.Role == UserRole.Mangaka)
         {
-            query = query.Where(f =>
+            // Mangaka thấy tất cả phạm vi (Series, Chapter, Task) thuộc về mình, TRỪ thông báo do mình gửi
+            query = query.Where(f => f.SenderId != user.Id &&
                 ((f.Series != null && f.Series.CreatedById == user.Id) ||
                  (f.Chapter != null && f.Chapter.Series.CreatedById == user.Id) ||
                  (f.MangaTask != null && f.MangaTask.Chapter.Series.CreatedById == user.Id))
-                && (f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.SenderId == user.Id)
+                && (f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Admin)
             );
         }
         else if (user.Role == UserRole.Tantou)
         {
-            query = query.Where(f =>
+            // Tantou KHÔNG thấy feedback của Task chỉ thấy Chapter và Series do mình phụ trách
+            query = query.Where(f => f.SenderId != user.Id && f.MangaTaskId == null &&
                 ((f.Series != null && f.Series.CreatedBy.SupervisorId == user.Id) ||
-                 (f.Chapter != null && f.Chapter.Series.CreatedBy.SupervisorId == user.Id) ||
-                 (f.MangaTask != null && f.MangaTask.Chapter.Series.CreatedBy.SupervisorId == user.Id))
-                && (f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.SenderId == user.Id)
+                 (f.Chapter != null && f.Chapter.Series.CreatedBy.SupervisorId == user.Id))
+                && (f.Sender.Role == UserRole.Editorial || f.Sender.Role == UserRole.Mangaka || f.Sender.Role == UserRole.Admin)
             );
         }
         else if (user.Role == UserRole.Editorial)
         {
-            query = query.Where(f => f.SenderId == user.Id);
+            // Editorial CHỈ thấy feedback tự động (StatusChange) ở phạm vi Series
+            // 1. Khi Tantou duyệt và gửi series lên (StatusChange)
+            // 2. Thông báo hệ thống nhắc nhở tạo lịch/xét duyệt (StatusChange từ Admin hoặc Editorial)
+            query = query.Where(f => f.MangaTaskId == null && f.ChapterId == null && f.Type == FeedbackType.StatusChange &&
+                (f.Sender.Role == UserRole.Tantou || f.Sender.Role == UserRole.Admin || f.Sender.Role == UserRole.Editorial)
+            );
         }
         else if (user.Role == UserRole.Assistant)
         {
-            query = query.Where(f => f.MangaTask != null && f.MangaTask.AssignedToId == user.Id &&
-                                     f.Sender.Role == UserRole.Mangaka);
+            // Assistant CHỈ thấy feedback ở phạm vi Task được assign cho mình
+            query = query.Where(f => f.SenderId != user.Id && f.MangaTaskId != null && f.MangaTask.AssignedToId == user.Id &&
+                                     (f.Sender.Role == UserRole.Mangaka || f.Sender.Role == UserRole.Admin));
         }
         else
         {
-            query = query.Where(f => f.SenderId == user.Id);
+            query = query.Where(f => false);
         }
 
         return await query.OrderByDescending(f => f.CreatedAt).Select(MapToFeedbackDetailResponse()).ToListAsync();
