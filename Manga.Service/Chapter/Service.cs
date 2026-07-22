@@ -239,6 +239,7 @@ public class Service: IService
             if (request.TotalPage == null || request.TotalPage <= 0)
                 throw new ArgumentException("TotalPage is required to submit chapter");
 
+
             if (chapter.Status != ChapterStatus.Processing && chapter.Status != ChapterStatus.Rejected)
                 throw new InvalidOperationException("Chapter can only be submitted when status is Processing or Rejected");
 
