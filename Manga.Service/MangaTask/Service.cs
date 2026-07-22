@@ -54,9 +54,10 @@ public class Service : IService
 
         var checkAssistant =
             await _dbContext.MangaTasks.AnyAsync(x =>
-                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id && x.IsDeleted == false);
+                x.AssignedToId == request.AssignedToId && x.ChapterId == chapter.Id && x.IsDeleted == false
+                && x.Status != MangaTaskStatus.Completed && x.Status != MangaTaskStatus.Unsatisfied);
         if (checkAssistant)
-            throw new InvalidOperationException("This assistant has already been assigned a task in this chapter.");
+            throw new InvalidOperationException("This assistant is currently working on another active task in this chapter.");
 
         if (request.From <= 0)
             throw new InvalidDataException("From page must be greater than 0.");
@@ -471,8 +472,6 @@ public class Service : IService
 
         if (task.Status == MangaTaskStatus.Completed)
             throw new InvalidOperationException("Cannot update deadline for a completed task.");
-        if (task.Status == MangaTaskStatus.Rejected)
-            throw new InvalidOperationException("Cannot update deadline for a rejected task.");
 
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
@@ -519,10 +518,20 @@ public class Service : IService
         
         if (task.Status != MangaTaskStatus.Available && task.Status != MangaTaskStatus.Rejected)
             throw new InvalidOperationException("Task must be in Available or Rejected status to be reassigned.");
+            
+        if (task.Deadline <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("Task deadline has passed. Please update the deadline before reassigning.");
 
         var newAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.NewAssistantId);
         if (newAssistant == null || newAssistant.Role != UserRole.Assistant) 
             throw new InvalidOperationException("New assigned user must be an Assistant.");
+
+        var checkNewAssistantTask = await _dbContext.MangaTasks.AnyAsync(x =>
+            x.AssignedToId == request.NewAssistantId && x.ChapterId == task.ChapterId && x.IsDeleted == false
+            && x.Status != MangaTaskStatus.Completed && x.Status != MangaTaskStatus.Unsatisfied);
+            
+        if (checkNewAssistantTask)
+            throw new InvalidOperationException("This assistant is currently working on another active task in this chapter.");
 
         task.AssignedToId = request.NewAssistantId;
         task.Status = MangaTaskStatus.Available;
