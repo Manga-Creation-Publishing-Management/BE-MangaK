@@ -22,7 +22,7 @@ public class Service : IService
     public async Task<Response.CreateNewTaskResponse> CreateNewTask(Request.CreateNewTaskRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        
+
         var (series, chapter) = await ValidateCreateTaskRequestAsync(request, userIdGuid);
 
         var mangaTask = new Repository.Entity.MangaTask()
@@ -187,9 +187,9 @@ public class Service : IService
         }
 
         task.Status = request.Status;
-        
-        var statusMsg = request.Status == MangaTaskStatus.Processing 
-            ? "Assistant accepted task " + task.TaskTitle 
+
+        var statusMsg = request.Status == MangaTaskStatus.Processing
+            ? "Assistant accepted task " + task.TaskTitle
             : "Assistant declined task " + task.TaskTitle;
 
         var statusChangeFeedback = new Repository.Entity.Feedback
@@ -213,9 +213,7 @@ public class Service : IService
     public async Task<bool> SubmitTask(Request.SubmitTaskRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        var task = await _dbContext.MangaTasks
-            .Include(x => x.Chapter)
-            .FirstOrDefaultAsync(x => x.Id == request.TaskId);
+        var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
         if (task.AssignedToId != userIdGuid) throw new UnauthorizedAccessException("You are not assigned to this task");
         if (task.Status != MangaTaskStatus.Processing && task.Status != MangaTaskStatus.Revising &&
@@ -233,7 +231,10 @@ public class Service : IService
         var submittedFile = await _mediaService.UploadFileAsync(request.SubmittedFileUrl);
         task.submittedFileUrl = submittedFile.FileUrl;
         task.SubmittedAt = currentDate;
-        task.Status = MangaTaskStatus.Pending;
+        if (task.Status == MangaTaskStatus.Revising || currentDate >= task.Deadline)
+        {
+            task.Status = MangaTaskStatus.Pending;
+        }
         
         var statusChangeFeedback = new Repository.Entity.Feedback
         {
@@ -248,7 +249,7 @@ public class Service : IService
             IsRead = false
         };
         _dbContext.Feedbacks.Add(statusChangeFeedback);
-        
+
         await _dbContext.SaveChangesAsync();
         return true;
     }
@@ -266,13 +267,14 @@ public class Service : IService
             throw new UnauthorizedAccessException("Only the creator can review this task");
         if (task.Status != MangaTaskStatus.Pending)
             throw new InvalidOperationException("Task must be in Pending status to review");
-       
+
         using var transaction = await _dbContext.Database.BeginTransactionAsync();
         try
         {
             var currentDate = DateTimeOffset.UtcNow;
-            
-            if ((request.Status == MangaTaskStatus.Revising || request.Status == MangaTaskStatus.Unsatisfied) && string.IsNullOrWhiteSpace(request.FeedbackContent))
+
+            if ((request.Status == MangaTaskStatus.Revising || request.Status == MangaTaskStatus.Unsatisfied) &&
+                string.IsNullOrWhiteSpace(request.FeedbackContent))
             {
                 throw new InvalidDataException("Feedback is required when rejecting or marking as unsatisfied.");
             }
@@ -315,7 +317,6 @@ public class Service : IService
                 IsRead = false
             };
             _dbContext.Feedbacks.Add(statusChangeFeedback);
-
             if (!string.IsNullOrEmpty(request.FeedbackContent))
             {
                 var feedback = new Repository.Entity.Feedback
@@ -332,7 +333,7 @@ public class Service : IService
                 };
                 _dbContext.Feedbacks.Add(feedback);
             }
-
+            
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
             return true;

@@ -68,18 +68,19 @@ public class Service: IService
 
         series.Status = SeriesStatus.Scheduled;
         series.UpdatedAt = DateTimeOffset.UtcNow;
-        
+
         var statusChangeFeedback = new Repository.Entity.Feedback
         {
             Id        = Guid.NewGuid(),
             SenderId  = userIdGuid,
-            Content   = "Scheduled by Editorial Board",
+            Content   = "Editorial Board has scheduled series " + series.Title,
             SeriesId  = series.Id,
             Type      = FeedbackType.StatusChange,
             CreatedAt = DateTimeOffset.UtcNow,
             IsRead    = false
         };
         await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
+
         await _dbContext.SaveChangesAsync();
 
         return new Response.CreatePublishingScheduleResponse()
@@ -267,19 +268,20 @@ public class Service: IService
         schedule.UpdatedAt = DateTimeOffset.UtcNow;
         
         schedule.Series.Status = SeriesStatus.Approved;
-            
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
         var statusChangeFeedback = new Repository.Entity.Feedback
         {
             Id        = Guid.NewGuid(),
             SenderId  = userIdGuid,
-            Content   = "Approved by System",
-            SeriesId  = schedule.SeriesId,
+            Content   = "System has reverted series " + schedule.Series.Title + " to Approved",
+            SeriesId  = schedule.Series.Id,
             Type      = FeedbackType.StatusChange,
             CreatedAt = DateTimeOffset.UtcNow,
             IsRead    = false
         };
         await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
-        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        
         await _dbContext.SaveChangesAsync();
     }
 }

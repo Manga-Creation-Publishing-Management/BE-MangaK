@@ -303,7 +303,6 @@ public class Service: IService
         series.ReviewedById = userIdGuid;
         series.UpdatedAt    = DateTimeOffset.UtcNow;
         
-        //
         var feedbackCreated = false;
         
         if (!string.IsNullOrWhiteSpace(request.Note))
@@ -314,7 +313,9 @@ public class Service: IService
                 SenderId  = editor.Id,
                 Content   = request.Note,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
             };
 
             await _dbContext.Feedbacks.AddAsync(feedback);
@@ -398,7 +399,6 @@ public class Service: IService
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
         
-        //
         var feedbackCreated = false;
         
         if (!string.IsNullOrWhiteSpace(request.Note))
@@ -409,7 +409,9 @@ public class Service: IService
                 SenderId  = board.Id,
                 Content   = request.Note,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
             };
 
             await _dbContext.Feedbacks.AddAsync(feedback);
@@ -570,10 +572,11 @@ public class Service: IService
                 SenderId  = userIdGuid,
                 Content   = request.Reason,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
-                Type      = FeedbackType.StatusChange,
-                IsRead    = false,
+                IsRead    = false
             };
+            
             await _dbContext.Feedbacks.AddAsync(feedback);
         }
         await _dbContext.SaveChangesAsync();
