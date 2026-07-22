@@ -152,6 +152,38 @@ public class Service : IService
     };
 }
 
+    public async Task<Response.GetReaderVoteResponse> GetReaderVote( Guid chapterId)
+    {
+        var user = _httpContextAccessor.HttpContext!.User.Claims
+            .FirstOrDefault(u => u.Type == "userId" || u.Type == "UserId")?.Value;
+        
+        if(String.IsNullOrEmpty(user))
+            throw new UnauthorizedAccessException("User not login");
+        
+        var userIdGuid = Guid.Parse(user!);
+        
+        var reader = await _dbContext.Readers.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        
+        if (reader == null)
+            throw new KeyNotFoundException("User not found");
+        
+        var vote = await _dbContext.ChapterVotings
+            .FirstOrDefaultAsync(x =>
+                x.ReaderId == userIdGuid &&
+                x.ChapterId == chapterId &&
+                !x.IsDeleted);
+
+        if (vote == null)
+            throw new KeyNotFoundException("Vote not found.");
+
+        return new Response.GetReaderVoteResponse
+        {
+            ReaderId = vote.ReaderId,
+            ChapterId = vote.ChapterId,
+            Rating = vote.Rate
+        };
+    }
+
 
     private Guid GetUserCurrentId()
     {
