@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Manga.Api.Controllers;
+
 [ApiController]
 [Route("api/[controller]")]
 public class VoteController : ControllerBase
@@ -18,16 +19,27 @@ public class VoteController : ControllerBase
 
     [Authorize(Policy = JwtExtensions.ReaderPolicy)]
     [HttpPost("voting-chapter")]
-    public async Task<IActionResult> VoteChapter([FromBody]Request.VoteChapterRequest request)
+    public async Task<IActionResult> VoteChapter([FromBody] Request.VoteChapterRequest request)
     {
         var result = await _chapterVotingService.VoteChapter(request);
         return Ok(ApiResponseFactory.SuccessResponse(result, "Vote Chapter Successfully", HttpContext.TraceIdentifier));
     }
+
     [Authorize]
     [HttpGet("calculate-chapter-vote")]
     public async Task<IActionResult> CalculateChapterVote()
     {
         var result = await _chapterVotingService.CalculateChapterVote();
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Calculate Chapter Vote Successfully", HttpContext.TraceIdentifier));
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Calculate Chapter Vote Successfully",
+            HttpContext.TraceIdentifier));
+    }
+    
+    [Authorize(Policy = JwtExtensions.ReaderPolicy)]
+    [HttpGet("{chapterId}/reader/{readerId}")]
+    public async Task<IActionResult> GetReaderVote(Guid chapterId, Guid readerId)
+    {
+        var result = await _chapterVotingService.GetReaderVote(readerId, chapterId);
+
+        return Ok(ApiResponseFactory.SuccessResponse(result, "Get reader vote successfully", HttpContext.TraceIdentifier));
     }
 }

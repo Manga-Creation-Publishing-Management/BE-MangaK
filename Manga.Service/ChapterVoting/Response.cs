@@ -38,4 +38,10 @@ public class Response
         public List<MonthlyRankingResponse> MonthlyRanking { get; set; } = new();
     }
     
+    public class GetReaderVoteResponse
+    {
+        public Guid ReaderId { get; set; }
+        public Guid ChapterId { get; set; }
+        public int Rating { get; set; }
+    }
 }

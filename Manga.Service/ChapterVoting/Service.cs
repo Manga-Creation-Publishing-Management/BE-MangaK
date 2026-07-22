@@ -152,6 +152,25 @@ public class Service : IService
     };
 }
 
+    public async Task<Response.GetReaderVoteResponse> GetReaderVote(Guid readerId, Guid chapterId)
+    {
+        var vote = await _dbContext.ChapterVotings
+            .FirstOrDefaultAsync(x =>
+                x.ReaderId == readerId &&
+                x.ChapterId == chapterId &&
+                !x.IsDeleted);
+
+        if (vote == null)
+            throw new KeyNotFoundException("Vote not found.");
+
+        return new Response.GetReaderVoteResponse
+        {
+            ReaderId = vote.ReaderId,
+            ChapterId = vote.ChapterId,
+            Rating = vote.Rate
+        };
+    }
+
 
     private Guid GetUserCurrentId()
     {
