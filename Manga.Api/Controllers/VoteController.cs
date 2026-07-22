@@ -36,7 +36,7 @@ public class VoteController : ControllerBase
     
     [Authorize(Policy = JwtExtensions.ReaderPolicy)]
     [HttpGet("{chapterId}/reader/{readerId}")]
-    public async Task<IActionResult> GetReaderVote(Guid chapterId, Guid readerId)
+    public async Task<IActionResult> GetReaderVote(Guid chapterId)
     {
         var result = await _chapterVotingService.GetReaderVote(chapterId);
 
