@@ -17,7 +17,7 @@ public class Service : IService
 
     public async Task<IEnumerable<Response.LeaderboardResponse>> GetWeeklyLeaderboard()
     {
-        var rankingResponse = await _chapterVotingService.CalculateChapterVote();
+            var rankingResponse = await _chapterVotingService.CalculateChapterVote();
         var weeklyRanking = rankingResponse.WeeklyRanking;
         if (weeklyRanking == null || !weeklyRanking.Any()) 
             return new List<Response.LeaderboardResponse>();
