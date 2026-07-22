@@ -242,7 +242,7 @@ public class Service: IService
                 chapter.ManuscriptFileUrl = uploadResult.FileUrl; 
             }
 
-            if (request.ChapterFileUrl == null || request.ChapterFileUrl.Length == 0)
+            if (request.ChapterFileUrl != null && request.ChapterFileUrl.Length > 0)
             {
                 if (request.TotalPage == null || request.TotalPage <= 0)
                     throw new ArgumentException("TotalPage is required to submit chapter");
