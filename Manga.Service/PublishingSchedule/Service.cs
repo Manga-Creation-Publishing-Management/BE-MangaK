@@ -80,7 +80,6 @@ public class Service: IService
             IsRead    = false
         };
         await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
-
         await _dbContext.SaveChangesAsync();
 
         return new Response.CreatePublishingScheduleResponse()
@@ -281,7 +280,6 @@ public class Service: IService
         };
         await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
         schedule.UpdatedAt = DateTimeOffset.UtcNow;
-        
         await _dbContext.SaveChangesAsync();
     }
 }

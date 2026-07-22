@@ -112,6 +112,7 @@ public class Service : IService
 
         return taskDetail;
     }
+
     public async Task<List<Response.GetTaskDetailsResponse>> GetTaskList(Request.GetTaskListRequest request)
     {
         var userIdGuid = GetCurrentUserId();
@@ -232,11 +233,7 @@ public class Service : IService
         var submittedFile = await _mediaService.UploadFileAsync(request.SubmittedFileUrl);
         task.submittedFileUrl = submittedFile.FileUrl;
         task.SubmittedAt = currentDate;
-        //task.Status = MangaTaskStatus.Pending;
-        if (task.Status == MangaTaskStatus.Revising || currentDate >= task.Deadline)
-        {
-            task.Status = MangaTaskStatus.Pending;
-        }
+        task.Status = MangaTaskStatus.Pending;
         
         var statusChangeFeedback = new Repository.Entity.Feedback
         {
@@ -330,7 +327,7 @@ public class Service : IService
                     MangaTaskId = task.Id,
                     ChapterId = task.ChapterId,
                     SeriesId = task.Chapter?.SeriesId,
-                    Type = FeedbackType.Manual,
+                    Type = request.Status == MangaTaskStatus.Completed ? FeedbackType.StatusChange : FeedbackType.Manual,
                     IsRead = false
                 };
                 _dbContext.Feedbacks.Add(feedback);
@@ -346,11 +343,14 @@ public class Service : IService
             Console.WriteLine(e);
             throw;
         }
+        return false;
     }
 
     public async Task<Response.GetTotalTaskResponse> GetTotalTask(Request.GetTaskListRequest request)
     {
-        var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId);
+        if (!request.ChapterId.HasValue) throw new ArgumentException("ChapterId is required");
+
+        var chapterExists = await _dbContext.Chapters.AnyAsync(x => x.Id == request.ChapterId.Value);
         if (!chapterExists) throw new KeyNotFoundException("Chapter not found");
 
         var total = await _dbContext.MangaTasks.Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false)
@@ -381,8 +381,8 @@ public class Service : IService
 
         if (task.Status == MangaTaskStatus.Completed)
             throw new InvalidOperationException("Cannot update deadline for a completed task.");
-        if (task.Status == MangaTaskStatus.Rejected)
-            throw new InvalidOperationException("Cannot update deadline for a rejected task.");
+        // if (task.Status == MangaTaskStatus.Rejected)
+        //     throw new InvalidOperationException("Cannot update deadline for a rejected task.");
 
         if (request.Deadline <= DateTimeOffset.UtcNow)
         {
@@ -453,7 +453,7 @@ public class Service : IService
             .Where(x => x.ChapterId == request.ChapterId && x.IsDeleted == false)
             .AsNoTracking()
             .ToListAsync();
-
+        
         var descriptions = tasks
             .Where(t => !string.IsNullOrWhiteSpace(t.TaskDescription))
             .Select(t => $"[{t.TaskDescription}]");
