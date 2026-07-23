@@ -19,8 +19,9 @@ public class Service : IService
     public async Task<bool> SendFeedback(Request.SendFeedbackRequest request)
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null)
+            throw new KeyNotFoundException("User not found or inactive");
 
         if (user.Role == UserRole.Assistant) throw new UnauthorizedAccessException("Assistant can't send feedback");
 
@@ -103,8 +104,8 @@ public class Service : IService
     public async Task<List<Response.GetFeedBackDetailResponse>> GetFeedBackDetail(Request.GetFeedBackRequest request)
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
 
         var series = await ResolveSeriesFromRequestAsync(request);
         await ValidateUserViewPermissionAsync(user, series, request.MangaTaskId);
@@ -124,8 +125,8 @@ public class Service : IService
     public async Task<List<Response.GetFeedBackDetailResponse>> GetFeedbackList()
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
 
         IQueryable<Repository.Entity.Feedback> query = _dbContext.Feedbacks
             .Where(f => !f.IsDeleted && f.Type != FeedbackType.EditPDF)
@@ -176,8 +177,8 @@ public class Service : IService
     public async Task<Response.GetFeedBackDetailResponse> GetFeedbackAnnotation(Request.GetFeedBackRequest request)
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
 
         var series = await ResolveSeriesFromRequestAsync(request);
         await ValidateUserViewPermissionAsync(user, series, request.MangaTaskId);
@@ -202,8 +203,8 @@ public class Service : IService
     public async Task<Response.GetFeedBackDetailResponse> GetLatestFeedback(Request.GetFeedBackRequest request)
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
 
         var series = await ResolveSeriesFromRequestAsync(request);
         await ValidateUserViewPermissionAsync(user, series, request.MangaTaskId);
@@ -339,8 +340,8 @@ public class Service : IService
     public async Task<bool> MarkAsRead(Guid feedbackId)
     {
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        if (user == null || user.IsDeleted) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
 
         var feedback = await _dbContext.Feedbacks.FirstOrDefaultAsync(f => f.Id == feedbackId && !f.IsDeleted);
         if (feedback == null) throw new KeyNotFoundException("Feedback not found");

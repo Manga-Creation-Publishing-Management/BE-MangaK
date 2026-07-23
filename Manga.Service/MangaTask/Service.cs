@@ -116,8 +116,8 @@ public class Service : IService
     public async Task<List<Response.GetTaskDetailsResponse>> GetTaskList(Request.GetTaskListRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
-        if (user == null) throw new KeyNotFoundException("User not found");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new KeyNotFoundException("User not found or inactive");
         if (user.Role != UserRole.Mangaka && user.Role != UserRole.Assistant)
             throw new UnauthorizedAccessException("You don't have permission to access this action");
 
@@ -370,8 +370,8 @@ public class Service : IService
     public async Task<bool> UpdateMangaTask(Request.UpdateMangaTaskRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
-        if (user == null) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
         if (user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka is allowed");
 
         var task = await _dbContext.MangaTasks
@@ -421,8 +421,8 @@ public class Service : IService
     public async Task<bool> ReassignTaskAsync(Request.ReassignTaskRequest request)
     {
         var userIdGuid = GetCurrentUserId();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
-        if (user == null || user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka can reassign tasks.");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null || user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only active Mangaka can reassign tasks.");
 
         var task = await _dbContext.MangaTasks.FirstOrDefaultAsync(x => x.Id == request.TaskId);
         if (task == null) throw new KeyNotFoundException("Task not found");
@@ -431,9 +431,9 @@ public class Service : IService
         if (task.Status != MangaTaskStatus.Available && task.Status != MangaTaskStatus.Rejected)
             throw new InvalidOperationException("Task must be in Available or Rejected status to be reassigned.");
 
-        var newAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.NewAssistantId);
+        var newAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.NewAssistantId && !x.IsDeleted && x.Status == UserStatus.Active);
         if (newAssistant == null || newAssistant.Role != UserRole.Assistant) 
-            throw new InvalidOperationException("New assigned user must be an Assistant.");
+            throw new InvalidOperationException("New assigned user must be an active Assistant.");
 
         task.AssignedToId = request.NewAssistantId;
         task.Status = MangaTaskStatus.Available;
@@ -464,8 +464,8 @@ public class Service : IService
 
     private async Task<(Repository.Entity.Series series, Repository.Entity.Chapter chapter)> ValidateCreateTaskRequestAsync(Request.CreateNewTaskRequest request, Guid userIdGuid)
     {
-        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid);
-        if (user == null) throw new UnauthorizedAccessException("Unauthorized");
+        var user = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userIdGuid && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (user == null) throw new UnauthorizedAccessException("Unauthorized or inactive");
         if (user.Role != UserRole.Mangaka) throw new UnauthorizedAccessException("Only Mangaka is allowed");
 
         var series = await _dbContext.Series.FirstOrDefaultAsync(x => x.Id == request.SeriesId);
@@ -489,8 +489,8 @@ public class Service : IService
             throw new InvalidOperationException(
                 "You cannot create a task. Chapter status must be Processing status or Created status");
         
-        var assignedAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.AssignedToId);
-        if (assignedAssistant == null) throw new KeyNotFoundException("Assigned assistant not found");
+        var assignedAssistant = await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.AssignedToId && !x.IsDeleted && x.Status == UserStatus.Active);
+        if (assignedAssistant == null) throw new KeyNotFoundException("Assigned assistant not found or inactive");
         if (assignedAssistant.Role != UserRole.Assistant)
             throw new UnauthorizedAccessException("Task can only be assigned to Assistant");
 
