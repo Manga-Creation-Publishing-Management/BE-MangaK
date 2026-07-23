@@ -70,12 +70,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddSwaggerServices();
 
-
 // ─── Middleware ────────────────────────────────────────────────────────────────
 builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 
 // ─── Background Jobs ──────────────────────────────────────────────────────────
 builder.Services.AddHostedService<DeadlineCheckerService>();
+builder.Services.AddHostedService<LeaderboardBackgroundService>();
 // ─── SeedData ────────────────────────────────────────────────────────────────
 
 //AI

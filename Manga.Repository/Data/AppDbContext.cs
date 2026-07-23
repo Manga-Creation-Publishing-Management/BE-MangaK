@@ -174,11 +174,22 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Leaderboard>(builder =>
         {
-            builder.Property(l => l.RankingPeriod).IsRequired().HasMaxLength(50);
-            builder.Property(l => l.RankPosition).IsRequired();
-            builder.Property(l => l.TotalVotes).IsRequired().HasColumnType("decimal(5,2)");
+                builder.Property(l => l.RankPosition).IsRequired();
+            builder.Property(l => l.PeriodStart).IsRequired();
+            builder.Property(l => l.PeriodEnd).IsRequired();
+            builder.Property(l => l.TotalVotes).IsRequired();
+            builder.Property(l => l.AverageRate).IsRequired();
+            builder.HasOne(l => l.Series)
+                .WithMany(s => s.Leaderboards)
+                .HasForeignKey(l => l.SeriesId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(l => new { l.SeriesId, l.RankingPeriod }).IsUnique();
+            builder.HasIndex(l => new
+            {
+                l.SeriesId,
+                l.PeriodStart,
+                l.PeriodEnd
+            }).IsUnique();
         });
 
         modelBuilder.Entity<PublishingSchedule>(builder =>

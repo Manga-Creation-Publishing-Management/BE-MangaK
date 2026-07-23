@@ -42,6 +42,7 @@ public class Response
        public string MangakaName { get; set; } = string.Empty;
        public DateTimeOffset? PublishDate { get; set; }
        public string? PublishPeriod { get; set; }
+       public DateTimeOffset? NextChapterPublishDate { get; set; }
        public DateTimeOffset CreateAt { get; set; }
        public List<ChapterSummary> Chapters { get; set; } = new();
     }

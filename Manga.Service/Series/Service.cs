@@ -179,6 +179,27 @@ public class Service: IService
         if (series == null)
             throw new KeyNotFoundException("Series not found");
 
+        DateTimeOffset? nextChapterDate = null;
+
+        var publishingChapter = series.Chapters
+            .Where(c => !c.IsDeleted &&
+                        c.Status == ChapterStatus.Publishing)
+            .OrderByDescending(c => c.ChapterNumber)
+            .FirstOrDefault();
+
+        if (publishingChapter != null && series.PublishingSchedule != null)
+        {
+            if (series.PublishingSchedule.PublishPeriod == "Weekly")
+            {
+                nextChapterDate = publishingChapter.Deadline.AddDays(7);
+            }
+
+            if (series.PublishingSchedule.PublishPeriod == "Monthly")
+            {
+                nextChapterDate = publishingChapter.Deadline.AddMonths(1);
+            }
+        }
+        
         var chapters = series.Chapters.OrderBy(c => c.ChapterNumber)
             .Select(c => new Response.ChapterSummary()
             {
@@ -202,6 +223,7 @@ public class Service: IService
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,
             PublishDate = series.PublishingSchedule?.PublishDate,
             PublishPeriod = series.PublishingSchedule?.PublishPeriod,
+            NextChapterPublishDate = nextChapterDate,
             CreateAt = series.CreatedAt,
             Chapters =  chapters
         };
@@ -446,20 +468,31 @@ public class Service: IService
         
         var users = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
         
-        if(users == null)
-            throw new UnauthorizedAccessException("User not found");
+        var reader = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == userIdGuid);
+
+        if (users == null)
+            throw new KeyNotFoundException("User not found");
         
-        if(users.Role == UserRole.Reader)
+        if(reader != null)
             throw new UnauthorizedAccessException("Reader is not allowed to filter series by status ");
-        var seriesList = await _dbContext.Series
+        var query = _dbContext.Series
             .Where(s => s.Status == status && !s.IsDeleted)
             .Include(s => s.CreatedBy)
             .Include(s => s.Chapters)
             .Include(s => s.CategorySeries)
             .ThenInclude(cs => cs.Category)
+            .AsQueryable();
+
+        if (users.Role == UserRole.Mangaka)
+            query = query.Where(s => s.CreatedById == userIdGuid);
+        
+        if (users.Role == UserRole.Tantou)
+            query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
+        
+        var seriesList = await query
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
-
+        
         if (!seriesList.Any())
             throw new KeyNotFoundException($"No Series found with {status}");
 
