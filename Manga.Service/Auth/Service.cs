@@ -136,6 +136,12 @@ public class Service : IService
             var avatarUrl = payload.Picture;
             var googleId = payload.Subject;
             
+            var isSystemUser = await _dbContext.Users.AnyAsync(u => u.Email == email && !u.IsDeleted);
+            if (isSystemUser)
+            {
+                throw new UnauthorizedAccessException("This email belongs to a system user and cannot be used to login as a reader.");
+            }
+
             var user = await _dbContext.Readers.FirstOrDefaultAsync(x => x.GoogleAccountId == googleId);
             if (user == null)
             {
