@@ -53,6 +53,8 @@ public class Service : IService
                     .SelectMany(c => c.ChapterVotes)
                     .Where(v =>
                         !v.IsDeleted &&
+                        !v.Reader.IsDeleted &&
+                        v.Reader.Status == UserStatus.Active &&
                         v.VoteAt >= start &&
                         v.VoteAt < end)
                     .ToList()
@@ -135,6 +137,8 @@ public class Service : IService
                     .SelectMany(c => c.ChapterVotes)
                     .Where(v =>
                         !v.IsDeleted &&
+                        !v.Reader.IsDeleted &&
+                        v.Reader.Status == UserStatus.Active &&
                         v.VoteAt >= start &&
                         v.VoteAt < end)
                     .ToList()

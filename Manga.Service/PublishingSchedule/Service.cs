@@ -28,7 +28,7 @@ public class Service: IService
         var userIdGuid = Guid.Parse(userId);
 
         var board = await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.Id == userIdGuid);
+            .FirstOrDefaultAsync(u => u.Id == userIdGuid && !u.IsDeleted && u.Status == UserStatus.Active);
         
         if(board == null)
             throw new UnauthorizedAccessException("User not found");
@@ -105,7 +105,7 @@ public class Service: IService
             throw new UnauthorizedAccessException("User not login");
 
         var userIdGuid = Guid.Parse(userIdStr);
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid && !u.IsDeleted && u.Status == UserStatus.Active);
 
         if (user == null)
             throw new UnauthorizedAccessException("User not found");
@@ -155,7 +155,7 @@ public class Service: IService
 
         var userIdGuid = Guid.Parse(userId);
 
-        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid);
+        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid && !u.IsDeleted && u.Status == UserStatus.Active);
         
         if(user == null)
             throw new UnauthorizedAccessException("User not found");
@@ -244,7 +244,7 @@ public class Service: IService
 
         var userIdGuid = Guid.Parse(userId);
 
-        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid);
+        var user = _dbContext.Users.FirstOrDefault(u => u.Id == userIdGuid && !u.IsDeleted && u.Status == UserStatus.Active);
         
         if(user == null)
             throw new UnauthorizedAccessException("User not found");

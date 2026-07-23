@@ -30,7 +30,7 @@ public class Service : IService
         var endOfMonth = startOfMonth.AddMonths(1);
 
         var userRole = await _dbContext.Users
-            .Where(u => u.Id == userIdGuid)
+            .Where(u => u.Id == userIdGuid && !u.IsDeleted && u.Status == UserStatus.Active)
             .Select(u => u.Role)
             .FirstOrDefaultAsync();
 
@@ -76,7 +76,7 @@ public class Service : IService
         var startOfCurrentMonth = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
 
         var userRole = await _dbContext.Users
-            .Where(u => u.Id == userIdGuild)
+            .Where(u => u.Id == userIdGuild && !u.IsDeleted && u.Status == UserStatus.Active)
             .Select(u => u.Role)
             .FirstOrDefaultAsync();
 
