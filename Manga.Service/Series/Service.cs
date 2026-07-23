@@ -1,4 +1,4 @@
-﻿using Manga.Repository.Data;
+using Manga.Repository.Data;
 using Manga.Repository.Entity;
 using Manga.Repository.Entity.Enums;
 using Microsoft.AspNetCore.Http;
@@ -272,15 +272,37 @@ public class Service: IService
         if (request.IsApproved)
         {
             series.Status = SeriesStatus.Pending;
-        }else
+            var statusChangeFeedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = editor.Id,
+                Content   = "Tantou is submitted series for Editorial Board",
+                SeriesId  = series.Id,
+                Type      = FeedbackType.StatusChange,
+                CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
+            };
+            await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
+        }
+        else
         {
             series.Status = SeriesStatus.Rejected;
+            var statusChangeFeedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = editor.Id,
+                Content   = "Tantou rejected series " + series.Title,
+                SeriesId  = series.Id,
+                Type      = FeedbackType.StatusChange,
+                CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
+            };
+            await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
         }
         
         series.ReviewedById = userIdGuid;
         series.UpdatedAt    = DateTimeOffset.UtcNow;
         
-        //
         var feedbackCreated = false;
         
         if (!string.IsNullOrWhiteSpace(request.Note))
@@ -291,7 +313,9 @@ public class Service: IService
                 SenderId  = editor.Id,
                 Content   = request.Note,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
             };
 
             await _dbContext.Feedbacks.AddAsync(feedback);
@@ -344,14 +368,37 @@ public class Service: IService
         {
             series.Status = SeriesStatus.Approved;
             series.ApprovedById = userIdGuid;
+            
+            var statusChangeFeedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = board.Id,
+                Content   = "Editorial Board has approved series " + series.Title,
+                SeriesId  = series.Id,
+                Type      = FeedbackType.StatusChange,
+                CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
+            };
+            await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
         }
         else
         {
             series.Status = SeriesStatus.Rejected;
+            
+            var statusChangeFeedback = new Repository.Entity.Feedback
+            {
+                Id        = Guid.NewGuid(),
+                SenderId  = board.Id,
+                Content   = "Editorial Board has rejected series " + series.Title,
+                SeriesId  = series.Id,
+                Type      = FeedbackType.StatusChange,
+                CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
+            };
+            await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
         }
         series.UpdatedAt = DateTimeOffset.UtcNow;
         
-        //
         var feedbackCreated = false;
         
         if (!string.IsNullOrWhiteSpace(request.Note))
@@ -362,7 +409,9 @@ public class Service: IService
                 SenderId  = board.Id,
                 Content   = request.Note,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
+                IsRead    = false
             };
 
             await _dbContext.Feedbacks.AddAsync(feedback);
@@ -397,32 +446,20 @@ public class Service: IService
         
         var users = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userIdGuid);
         
-        var reader = await _dbContext.Readers.FirstOrDefaultAsync(x => x.Id == userIdGuid);
-
-        if (users == null)
-            throw new KeyNotFoundException("User not found");
+        if(users == null)
+            throw new UnauthorizedAccessException("User not found");
         
-        if(reader != null)
+        if(users.Role == UserRole.Reader)
             throw new UnauthorizedAccessException("Reader is not allowed to filter series by status ");
-        var query = _dbContext.Series
+        var seriesList = await _dbContext.Series
             .Where(s => s.Status == status && !s.IsDeleted)
             .Include(s => s.CreatedBy)
             .Include(s => s.Chapters)
             .Include(s => s.CategorySeries)
             .ThenInclude(cs => cs.Category)
             .OrderByDescending(s => s.CreatedAt)
-            .AsQueryable();
-
-        if (users.Role == UserRole.Mangaka)
-            query = query.Where(s => s.CreatedById == userIdGuid);
-        
-        if (users.Role == UserRole.Tantou)
-            query = query.Where(s => s.CreatedBy.SupervisorId == userIdGuid);
-        
-        var seriesList = await query
-            .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
-        
+
         if (!seriesList.Any())
             throw new KeyNotFoundException($"No Series found with {status}");
 
@@ -515,6 +552,18 @@ public class Service: IService
         series.Status = SeriesStatus.Cancelled;
         series.UpdatedAt = DateTimeOffset.UtcNow;
 
+        var statusChangeFeedback = new Repository.Entity.Feedback
+        {
+            Id        = Guid.NewGuid(),
+            SenderId  = userIdGuid,
+            Content   = "Editorial Board has cancelled series " + series.Title,
+            SeriesId  = series.Id,
+            Type      = FeedbackType.StatusChange,
+            CreatedAt = DateTimeOffset.UtcNow,
+            IsRead    = false
+        };
+        await _dbContext.Feedbacks.AddAsync(statusChangeFeedback);
+
         if (!string.IsNullOrWhiteSpace(request.Reason))
         {
             var feedback = new Repository.Entity.Feedback
@@ -523,10 +572,11 @@ public class Service: IService
                 SenderId  = userIdGuid,
                 Content   = request.Reason,
                 SeriesId  = series.Id,
+                Type      = FeedbackType.Manual,
                 CreatedAt = DateTimeOffset.UtcNow,
-                Type      = FeedbackType.StatusChange,
-                IsRead    = false,
+                IsRead    = false
             };
+            
             await _dbContext.Feedbacks.AddAsync(feedback);
         }
         await _dbContext.SaveChangesAsync();
@@ -541,8 +591,7 @@ public class Service: IService
             CancelledAt     = series.UpdatedAt!.Value
         };
     }
-    
-    
+
     public async Task<object> SearchSeriesByVoting(Request.SearchSeriesByVotingRequest request)
     {
         if (request.MinRate < 0 || request.MaxRate > 5 || request.MinRate > request.MaxRate)
@@ -573,7 +622,6 @@ public class Service: IService
         };
     }
     
-
     private List<ChapterVoting.Response.WeeklyRankingResponse> GetWeeklyRanking(
         List<Repository.Entity.Series> seriesList, DateTimeOffset now, double minRate, double maxRate)
     {
