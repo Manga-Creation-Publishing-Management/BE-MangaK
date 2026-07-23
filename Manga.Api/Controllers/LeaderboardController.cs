@@ -15,19 +15,20 @@ public class LeaderboardController : ControllerBase
     {
         _leaderboardService = leaderboardService;
     }
+   
     [Authorize]
-    [HttpGet("weekly")]
-    public async Task<IActionResult> GetWeeklyLeaderboard()
+    [HttpPost("generate-weekly")]
+    public async Task<IActionResult> GenerateWeekly()
     {
-        var result = await _leaderboardService.GetWeeklyLeaderboard();
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Weedkly Leaderboard Successfully", HttpContext.TraceIdentifier));
+        await _leaderboardService.GenerateWeeklyLeaderboard();
+        return Ok(ApiResponseFactory.SuccessResponse(null, "Weekly leaderboard generated.", HttpContext.TraceIdentifier));
     }
-    [Authorize]
-    [HttpGet("monthly")]
-    public async Task<IActionResult> GetMonthlyLeaderboard()
-    {
-        var result = await _leaderboardService.GetMonthlyLeaderboard();
-        return Ok(ApiResponseFactory.SuccessResponse(result, "Get Monthly Leaderboard Successfully", HttpContext.TraceIdentifier));
 
+    [Authorize]
+    [HttpPost("generate-monthly")]
+    public async Task<IActionResult> GenerateMonthly()
+    {
+        await _leaderboardService.GenerateMonthlyLeaderboard();
+        return Ok(ApiResponseFactory.SuccessResponse(null, "Monthly leaderboard generated.", HttpContext.TraceIdentifier));
     }
 }
