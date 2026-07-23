@@ -5,8 +5,6 @@ namespace Manga.Repository.Entity;
 
 public class Leaderboard: BaseEntity<Guid>, IAuditableEntity
 {
-    public string? RankingPeriod { get; set; }// không còn sử dụng
-    public LeaderboardType Type { get; set; }//
     public DateTime PeriodStart { get; set; }//
     public DateTime PeriodEnd { get; set; }//
     public required int RankPosition { get; set; }

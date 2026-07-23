@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Manga.Repository.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260723061640_UpdateLeaderBoard")]
-    partial class UpdateLeaderBoard
+    [Migration("20260723080459_Remove_type_and_rankingPeriod_attributeOfLeaderboard")]
+    partial class Remove_type_and_rankingPeriod_attributeOfLeaderboard
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -281,26 +281,18 @@ namespace Manga.Repository.Migrations
                     b.Property<int>("RankPosition")
                         .HasColumnType("integer");
 
-                    b.Property<string>("RankingPeriod")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<Guid>("SeriesId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("TotalVotes")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SeriesId", "Type", "PeriodStart", "PeriodEnd")
+                    b.HasIndex("SeriesId", "PeriodStart", "PeriodEnd")
                         .IsUnique();
 
                     b.ToTable("Leaderboards");

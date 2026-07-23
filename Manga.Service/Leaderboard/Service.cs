@@ -35,7 +35,7 @@ public class Service : IService
         var (start, end) = GetLastWeekPeriod();
 
         bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
-            x.Type == LeaderboardType.Weekly &&
+            // x.Type == LeaderboardType.Weekly &&
             x.PeriodStart.Date == start.Date &&
             x.PeriodEnd.Date == end.Date);
 
@@ -76,7 +76,7 @@ public class Service : IService
             _dbContext.Leaderboards.Add(new Repository.Entity.Leaderboard
             {
                 Id = Guid.NewGuid(),
-                Type = LeaderboardType.Weekly,
+                // Type = LeaderboardType.Weekly,
                 PeriodStart = start,
                 PeriodEnd = end,
                 RankPosition = rank++,
@@ -116,7 +116,7 @@ public class Service : IService
         var (start, end) = GetLastMonthPeriod();
 
         bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
-            x.Type == LeaderboardType.Monthly &&
+            // x.Type == LeaderboardType.Monthly &&
             x.PeriodStart.Date == start.Date &&
             x.PeriodEnd.Date == end.Date);
 
@@ -157,7 +157,7 @@ public class Service : IService
             _dbContext.Leaderboards.Add(new Repository.Entity.Leaderboard
             {
                 Id = Guid.NewGuid(),
-                Type = LeaderboardType.Monthly,
+                // Type = LeaderboardType.Monthly,
                 PeriodStart = start,
                 PeriodEnd = end,
                 RankPosition = rank++,
