@@ -156,6 +156,10 @@ public class Service : IService
                 _dbContext.Readers.Add(user); 
                 await _dbContext.SaveChangesAsync();
             }
+            else if (user.IsDeleted)
+            {
+                throw new UnauthorizedAccessException("Account is deleted.");
+            }
             else if (user.Status == UserStatus.Inactive)
             {
                 throw new UnauthorizedAccessException("Account is inactive.");
@@ -222,6 +226,20 @@ public class Service : IService
             session.IsRevoked = true;
             await _dbContext.SaveChangesAsync();
             throw new UnauthorizedAccessException("Access denied. Your session is invalid or has expired.");
+        }
+
+        if (session.User != null && (session.User.IsDeleted || session.User.Status != UserStatus.Active))
+        {
+            session.IsRevoked = true;
+            await _dbContext.SaveChangesAsync();
+            throw new UnauthorizedAccessException("Your account has been deleted or deactivated.");
+        }
+
+        if (session.Reader != null && (session.Reader.IsDeleted || session.Reader.Status != UserStatus.Active))
+        {
+            session.IsRevoked = true;
+            await _dbContext.SaveChangesAsync();
+            throw new UnauthorizedAccessException("Your account has been deleted or deactivated.");
         }
 
         session.IsRevoked = true;

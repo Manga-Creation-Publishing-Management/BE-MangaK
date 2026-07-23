@@ -25,7 +25,7 @@ public class Service : IService
         
         var user = await _dbContext.Users
             .AsNoTracking()
-            .Where(u => u.Id == userId && !u.IsDeleted)
+            .Where(u => u.Id == userId && !u.IsDeleted && u.Status == UserStatus.Active)
             .Select(user => new Response.GetProfileResponse
             {
                 Id = user.Id,
@@ -49,7 +49,7 @@ public class Service : IService
     {
         
         var userId = GetUserIdCurrent();
-        var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == userId && !c.IsDeleted);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(c => c.Id == userId && !c.IsDeleted && c.Status == UserStatus.Active);
         
         if (user == null) 
             throw new UnauthorizedAccessException("Account disabled or does not exist");
@@ -104,7 +104,7 @@ public class Service : IService
     }
     public async Task<List<Response.GetUserListByRoleResponse>> GetUserListByRole(Request.GetUserListByRoleRequest request)
     {
-        var usersList  = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == request.UserRole )
+        var usersList  = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == request.UserRole && c.Status != UserStatus.Inactive)
             .OrderBy(c => c.FirstName)
             .Select(c => new Response.GetUserListByRoleResponse()
             {
@@ -130,7 +130,7 @@ public class Service : IService
                 throw new InvalidOperationException("Only Mangaka can be assigned a supervisor.");
 
             var supervisor = await _dbContext.Users
-                .FirstOrDefaultAsync(c => c.Id == request.SupervisorId.Value && c.Role == UserRole.Tantou && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.Id == request.SupervisorId.Value && c.Role == UserRole.Tantou && !c.IsDeleted && c.Status == UserStatus.Active);
             
             if (supervisor == null) 
                 throw new InvalidOperationException("The specified Tantou account was not found, deleted, or is not a Tantou.");
@@ -189,10 +189,10 @@ public class Service : IService
     public async Task<List<Response.GetUserListByRoleResponse>> FilterAssistant(Request.FilterAssistantRequest request)
     {
         var userId =  GetUserIdCurrent();
-        var userCheck =  await _dbContext.Users.AnyAsync(c => c.Id == userId && !c.IsDeleted && c.Role == UserRole.Mangaka);
+        var userCheck =  await _dbContext.Users.AnyAsync(c => c.Id == userId && !c.IsDeleted && c.Role == UserRole.Mangaka && c.Status == UserStatus.Active);
         if (!userCheck) throw new InvalidOperationException("This account not found or was deleted. Or You aren't mangaka");
 
-        var listAssistant = await _dbContext.Users.Where(c => !c.IsDeleted && c.Role == UserRole.Assistant
+        var listAssistant = await _dbContext.Users.Where(c => !c.IsDeleted && c.Status == UserStatus.Active && c.Role == UserRole.Assistant
                                                                            && !_dbContext.MangaTasks.Any(x => x.AssignedToId == c.Id &&
                                                                                x.ChapterId == request.ChapterId))
             .Select(u => new Response.GetUserListByRoleResponse()
@@ -231,7 +231,7 @@ public class Service : IService
     public async Task<List<Response.GetUserListResponse>> FilterTantouList()
     {
         var tantous = await _dbContext.Users
-            .Where(c => !c.IsDeleted && c.Role == UserRole.Tantou && c.Mangakas.Count(m => !m.IsDeleted && m.Role == UserRole.Mangaka && m.Status == UserStatus.Active) < 3)
+            .Where(c => !c.IsDeleted && c.Status == UserStatus.Active && c.Role == UserRole.Tantou && c.Mangakas.Count(m => !m.IsDeleted && m.Role == UserRole.Mangaka && m.Status == UserStatus.Active) < 3)
             .OrderBy(c => c.FirstName)
             .Select(c => new Response.GetUserListResponse()
             {
