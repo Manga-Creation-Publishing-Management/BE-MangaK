@@ -1,3 +1,5 @@
+using Manga.Repository.Entity;
+using Manga.Repository.Entity.Enums;
 using Manga.Repository.Data;
 using Microsoft.EntityFrameworkCore;
 using ChapterVotingService = Manga.Service.ChapterVoting.IService;
@@ -7,149 +9,165 @@ namespace Manga.Service.Leaderboard;
 public class Service : IService
 {
     private readonly AppDbContext _dbContext;
-    private readonly ChapterVotingService _chapterVotingService;
 
-    public Service(AppDbContext dbContext, ChapterVotingService chapterVotingService)
+    public Service(AppDbContext dbContext)
     {
         _dbContext = dbContext;
-        _chapterVotingService = chapterVotingService;
     }
-
-    public async Task<IEnumerable<Response.LeaderboardResponse>> GetWeeklyLeaderboard()
+    
+    private static (DateTime Start, DateTime End) GetLastWeekPeriod()
     {
-            var rankingResponse = await _chapterVotingService.CalculateChapterVote();
-        var weeklyRanking = rankingResponse.WeeklyRanking;
-        if (weeklyRanking == null || !weeklyRanking.Any()) 
-            return new List<Response.LeaderboardResponse>();
-        var seriesIds = weeklyRanking.Select(r => r.SeriesId).ToList();
+        var today = DateTime.UtcNow.Date;
 
-        var authorInfo = await _dbContext.Series
-            .Where(s => seriesIds.Contains(s.Id))
-            .Select(s => new 
+        // Monday tuần hiện tại
+        var currentMonday = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+            currentMonday = today.AddDays(-6);
+
+        var lastMonday = currentMonday.AddDays(-7);
+
+        return (lastMonday, currentMonday);
+    }
+    
+    public async Task GenerateWeeklyLeaderboard()
+    {
+        var (start, end) = GetLastWeekPeriod();
+
+        bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
+            x.Type == LeaderboardType.Weekly &&
+            x.PeriodStart.Date == start.Date &&
+            x.PeriodEnd.Date == end.Date);
+
+        if (existed)
+            return;
+
+        var rankings = await _dbContext.Series
+            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted)
+            .Select(series => new
             {
-                SeriesId = s.Id,
-                AuthorName = !string.IsNullOrEmpty(s.CreatedBy.AuthorName) 
-                    ? s.CreatedBy.AuthorName 
-                    : (s.CreatedBy.FirstName + " " + s.CreatedBy.LastName).Trim()
+                Series = series,
+
+                Votes = series.Chapters.Where(c=>!c.IsDeleted && c.Status == ChapterStatus.Publishing)
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v =>
+                        !v.IsDeleted &&
+                        v.VoteAt >= start &&
+                        v.VoteAt < end)
+                    .ToList()
             })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.AuthorName);
+            .ToListAsync();
+        
+        var result = rankings.Select(x => new
+            {
+                x.Series,
+                TotalVotes = x.Votes.Count,
+                AverageRate = x.Votes.Any() ? Math.Round(x.Votes.Average(v=>v.Rate),2) :0
+            })
+            .Where(x => x.TotalVotes >= 10)
+            .OrderByDescending(x => x.AverageRate)
+            .ThenByDescending(x => x.TotalVotes)
+            .ToList();
+        
+        int rank = 1;
 
-        var result = new List<Response.LeaderboardResponse>();
-
-        foreach (var current in weeklyRanking)
+        foreach (var item in result)
         {
-            var authorName = authorInfo.GetValueOrDefault(current.SeriesId) ?? "Unknown";
-
-            var prevPeriodStart = current.WeeklyPeriodStart.AddDays(-7);
-            var prevPeriodEnd = current.WeeklyPeriodStart;
-
-            int prevVotes = await _dbContext.Chapters
-                .Where(c => c.SeriesId == current.SeriesId && !c.IsDeleted)
-                .SelectMany(c => c.ChapterVotes)
-                .CountAsync(v => v.VoteAt >= prevPeriodStart && v.VoteAt < prevPeriodEnd);
-
-            int currentVotesCount = current.WeeklyTotalVotes;
-            double currentAverageRate = current.WeeklyAverageRate;
-
-            string changeStr = "0.0%";
-            if (prevVotes > 0)
+            _dbContext.Leaderboards.Add(new Repository.Entity.Leaderboard
             {
-                double change = ((double)(currentVotesCount - prevVotes) / prevVotes) * 100;
-                changeStr = (change > 0 ? "+" : "") + change.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%";
-            }
-            else if (currentVotesCount > 0)
-            {
-                changeStr = "+100.0%";
-            }
-
-            result.Add(new Response.LeaderboardResponse
-            {
-                Series = current.Title,
-                Author = authorName,
-                Votes = currentVotesCount,
-                AverageRate = currentAverageRate,
-                Change = changeStr
+                Id = Guid.NewGuid(),
+                Type = LeaderboardType.Weekly,
+                PeriodStart = start,
+                PeriodEnd = end,
+                RankPosition = rank++,
+                SeriesId = item.Series.Id,
+                TotalVotes = item.TotalVotes,
+                AverageRate = item.AverageRate,
+                CreatedAt = DateTimeOffset.UtcNow
             });
         }
 
-        result = result.OrderByDescending(r => r.Votes).ToList();
-        
-        int rank = 1;
-        foreach (var item in result)
-        {
-            item.Rank = rank++;
-        }
-
-        return result;
+        await _dbContext.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Response.LeaderboardResponse>> GetMonthlyLeaderboard()
+    private static (DateTime Start, DateTime End) GetLastMonthPeriod()
     {
-        var rankingResponse = await _chapterVotingService.CalculateChapterVote();
-        var monthlyRanking = rankingResponse.MonthlyRanking;
+        var now = DateTime.UtcNow;
 
-        if (monthlyRanking == null || !monthlyRanking.Any()) 
-            return new List<Response.LeaderboardResponse>();
+        DateTime end;
 
-        var seriesIds = monthlyRanking.Select(r => r.SeriesId).ToList();
-
-        var authorInfo = await _dbContext.Series
-            .Where(s => seriesIds.Contains(s.Id))
-            .Select(s => new 
-            {
-                SeriesId = s.Id,
-                AuthorName = !string.IsNullOrEmpty(s.CreatedBy.AuthorName) 
-                    ? s.CreatedBy.AuthorName 
-                    : (s.CreatedBy.FirstName + " " + s.CreatedBy.LastName).Trim()
-            })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.AuthorName);
-
-        var result = new List<Response.LeaderboardResponse>();
-
-        foreach (var current in monthlyRanking)
+        if (now.Day >= 25)
         {
-            var authorName = authorInfo.GetValueOrDefault(current.SeriesId) ?? "Unknown";
+            end = new DateTime(now.Year, now.Month, 25);
+        }
+        else
+        {
+            var prev = now.AddMonths(-1);
+            end = new DateTime(prev.Year, prev.Month, 25);
+        }
 
-            var prevPeriodStart = current.MonthlyPeriodStart.AddDays(-30);
-            var prevPeriodEnd = current.MonthlyPeriodStart;
+        var start = end.AddMonths(-1);
 
-            int prevVotes = await _dbContext.Chapters
-                .Where(c => c.SeriesId == current.SeriesId && !c.IsDeleted)
-                .SelectMany(c => c.ChapterVotes)
-                .CountAsync(v => v.VoteAt >= prevPeriodStart && v.VoteAt < prevPeriodEnd);
+        return (start, end);
+    }
+    
+    public async Task GenerateMonthlyLeaderboard()
+    {
+        var (start, end) = GetLastMonthPeriod();
 
-            int currentVotesCount = current.MonthlyTotalVotes;
-            double currentAverageRate = current.MonthlyAverageRate;
+        bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
+            x.Type == LeaderboardType.Monthly &&
+            x.PeriodStart.Date == start.Date &&
+            x.PeriodEnd.Date == end.Date);
 
-            string changeStr = "0.0%";
-            if (prevVotes > 0)
+        if (existed)
+            return;
+
+        var rankings = await _dbContext.Series
+            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted)
+            .Select(series => new
             {
-                double change = ((double)(currentVotesCount - prevVotes) / prevVotes) * 100;
-                changeStr = (change > 0 ? "+" : "") + change.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "%";
-            }
-            else if (currentVotesCount > 0)
-            {
-                changeStr = "+100.0%";
-            }
+                Series = series,
 
-            result.Add(new Response.LeaderboardResponse
+                Votes = series.Chapters.Where(c=>!c.IsDeleted && c.Status == ChapterStatus.Publishing)
+                    .SelectMany(c => c.ChapterVotes)
+                    .Where(v =>
+                        !v.IsDeleted &&
+                        v.VoteAt >= start &&
+                        v.VoteAt < end)
+                    .ToList()
+            })
+            .ToListAsync();
+        
+        var result = rankings.Select(x => new
             {
-                Series = current.Title,
-                Author = authorName,
-                Votes = currentVotesCount,
-                AverageRate = currentAverageRate,
-                Change = changeStr
+                x.Series,
+                TotalVotes = x.Votes.Count,
+                AverageRate = x.Votes.Any() ? Math.Round(x.Votes.Average(v=>v.Rate),2) :0
+            })
+            .Where(x => x.TotalVotes >= 10)
+            .OrderByDescending(x => x.AverageRate)
+            .ThenByDescending(x => x.TotalVotes)
+            .ToList();
+        
+        int rank = 1;
+
+        foreach (var item in result)
+        {
+            _dbContext.Leaderboards.Add(new Repository.Entity.Leaderboard
+            {
+                Id = Guid.NewGuid(),
+                Type = LeaderboardType.Monthly,
+                PeriodStart = start,
+                PeriodEnd = end,
+                RankPosition = rank++,
+                SeriesId = item.Series.Id,
+                TotalVotes = item.TotalVotes,
+                AverageRate = item.AverageRate,
+                CreatedAt = DateTimeOffset.UtcNow
             });
         }
 
-        result = result.OrderByDescending(r => r.Votes).ToList();
-        
-        int rank = 1;
-        foreach (var item in result)
-        {
-            item.Rank = rank++;
-        }
-
-        return result;
+        await _dbContext.SaveChangesAsync();
     }
 }

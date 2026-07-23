@@ -410,7 +410,6 @@ public class Service: IService
             .Include(s => s.Chapters)
             .Include(s => s.CategorySeries)
             .ThenInclude(cs => cs.Category)
-            .OrderByDescending(s => s.CreatedAt)
             .AsQueryable();
 
         if (users.Role == UserRole.Mangaka)
