@@ -209,6 +209,8 @@ public class Service : IService
             var dates = period.Split(" - ");
             if (dates.Length != 2 || !DateTime.TryParse(dates[0], out start) || !DateTime.TryParse(dates[1], out end))
                 throw new ArgumentException("Invalid period format. Expected 'yyyy-MM-dd - yyyy-MM-dd'.");
+            start = DateTime.SpecifyKind(start.Date, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end.Date, DateTimeKind.Utc);
         }
         else
         {
@@ -292,6 +294,9 @@ public class Service : IService
             var dates = period.Split(" - ");
             if (dates.Length != 2 || !DateTime.TryParse(dates[0], out start) || !DateTime.TryParse(dates[1], out end))
                 throw new ArgumentException("Invalid period format. Expected 'yyyy-MM-dd - yyyy-MM-dd'.");
+            
+            start = DateTime.SpecifyKind(start.Date, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end.Date, DateTimeKind.Utc);
         }
         else
         {
