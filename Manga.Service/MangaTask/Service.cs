@@ -231,10 +231,10 @@ public class Service : IService
         var submittedFile = await _mediaService.UploadFileAsync(request.SubmittedFileUrl);
         task.submittedFileUrl = submittedFile.FileUrl;
         task.SubmittedAt = currentDate;
-        if (task.Status == MangaTaskStatus.Revising || currentDate >= task.Deadline)
-        {
+        // if (task.Status == MangaTaskStatus.Revising || currentDate >= task.Deadline)
+        // {
             task.Status = MangaTaskStatus.Pending;
-        }
+        // }
         
         var statusChangeFeedback = new Repository.Entity.Feedback
         {
