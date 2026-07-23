@@ -179,6 +179,27 @@ public class Service: IService
         if (series == null)
             throw new KeyNotFoundException("Series not found");
 
+        DateTimeOffset? nextChapterDate = null;
+
+        var publishingChapter = series.Chapters
+            .Where(c => !c.IsDeleted &&
+                        c.Status == ChapterStatus.Publishing)
+            .OrderByDescending(c => c.ChapterNumber)
+            .FirstOrDefault();
+
+        if (publishingChapter != null && series.PublishingSchedule != null)
+        {
+            if (series.PublishingSchedule.PublishPeriod == "Weekly")
+            {
+                nextChapterDate = publishingChapter.Deadline.AddDays(7);
+            }
+
+            if (series.PublishingSchedule.PublishPeriod == "Monthly")
+            {
+                nextChapterDate = publishingChapter.Deadline.AddMonths(1);
+            }
+        }
+        
         var chapters = series.Chapters.OrderBy(c => c.ChapterNumber)
             .Select(c => new Response.ChapterSummary()
             {
@@ -202,6 +223,7 @@ public class Service: IService
             MangakaName = series.CreatedBy.AuthorName ?? series.CreatedBy.FirstName + " " + series.CreatedBy.LastName,
             PublishDate = series.PublishingSchedule?.PublishDate,
             PublishPeriod = series.PublishingSchedule?.PublishPeriod,
+            NextChapterPublishDate = nextChapterDate,
             CreateAt = series.CreatedAt,
             Chapters =  chapters
         };
