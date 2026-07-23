@@ -174,9 +174,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Leaderboard>(builder =>
         {
-            builder.Property(l => l.RankingPeriod).HasMaxLength(50);
-            builder.Property(l => l.RankPosition).IsRequired();
-            builder.Property(x => x.Type).HasConversion<string>().IsRequired();
+                builder.Property(l => l.RankPosition).IsRequired();
             builder.Property(l => l.PeriodStart).IsRequired();
             builder.Property(l => l.PeriodEnd).IsRequired();
             builder.Property(l => l.TotalVotes).IsRequired();
@@ -189,7 +187,6 @@ public class AppDbContext : DbContext
             builder.HasIndex(l => new
             {
                 l.SeriesId,
-                l.Type,
                 l.PeriodStart,
                 l.PeriodEnd
             }).IsUnique();
