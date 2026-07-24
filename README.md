@@ -29,7 +29,7 @@ Manga/
 │   ├── Migrations
 │   └── Abstraction
 │
-├── Manga.Common
+├
 │
 └── README.md
 ```
