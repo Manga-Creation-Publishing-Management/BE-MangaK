@@ -37,14 +37,14 @@ public class Service : IService
 
         bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
             // x.Type == LeaderboardType.Weekly &&
-            x.PeriodStart.Date == start.Date &&
-            x.PeriodEnd.Date == end.Date);
+            x.PeriodStart == start &&
+            x.PeriodEnd == end);
 
         if (existed)
             return false;
 
         var rankings = await _dbContext.Series
-            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted)
+            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted && x.PublishingSchedule.PublishPeriod == "Weekly")
             .Select(series => new
             {
                 Series = series,
@@ -55,6 +55,7 @@ public class Service : IService
                         !v.IsDeleted &&
                         !v.Reader.IsDeleted &&
                         v.Reader.Status == UserStatus.Active &&
+                        v.Status == VoteStatus.Active &&
                         v.VoteAt >= start &&
                         v.VoteAt < end)
                     .ToList()
@@ -121,14 +122,14 @@ public class Service : IService
 
         bool existed = await _dbContext.Leaderboards.AnyAsync(x =>
             // x.Type == LeaderboardType.Monthly &&
-            x.PeriodStart.Date == start.Date &&
-            x.PeriodEnd.Date == end.Date);
+            x.PeriodStart == start &&
+            x.PeriodEnd == end);
 
         if (existed)
             return false;
 
         var rankings = await _dbContext.Series
-            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted)
+            .Where(x => x.Status == SeriesStatus.Publishing && !x.IsDeleted && x.PublishingSchedule.PublishPeriod == "Monthly")
             .Select(series => new
             {
                 Series = series,
@@ -139,6 +140,7 @@ public class Service : IService
                         !v.IsDeleted &&
                         !v.Reader.IsDeleted &&
                         v.Reader.Status == UserStatus.Active &&
+                        v.Status == VoteStatus.Active &&
                         v.VoteAt >= start &&
                         v.VoteAt < end)
                     .ToList()
@@ -239,12 +241,12 @@ public class Service : IService
         var currentLeaderboard = await _dbContext.Leaderboards
             .Include(x => x.Series)
             .ThenInclude(x => x.CreatedBy)
-            .Where(x => x.PeriodStart.Date == start.Date && x.PeriodEnd.Date == end.Date)
+            .Where(x => x.PeriodStart == start && x.PeriodEnd == end)
             .OrderBy(x => x.RankPosition)
             .ToListAsync();
 
         var prevLeaderboardData = await _dbContext.Leaderboards
-            .Where(x => x.PeriodStart.Date == prevStart.Date && x.PeriodEnd.Date == prevEnd.Date)
+            .Where(x => x.PeriodStart == prevStart && x.PeriodEnd == prevEnd)
             .Select(x => new { x.SeriesId, x.TotalVotes })
             .ToListAsync();
 
@@ -266,10 +268,6 @@ public class Service : IService
             {
                 double percentChange = (double)(item.TotalVotes - prevVotes) / prevVotes * 100;
                 change = percentChange > 0 ? $"+{percentChange:F1}%" : $"{percentChange:F1}%";
-            }
-            else if (prevLeaderboard.TryGetValue(item.SeriesId, out int pv) && pv == 0 && item.TotalVotes > 0)
-            {
-                change = "+100%";
             }
 
             result.Add(new Response.LeaderboardResponse
@@ -325,12 +323,12 @@ public class Service : IService
         var currentLeaderboard = await _dbContext.Leaderboards
             .Include(x => x.Series)
             .ThenInclude(x => x.CreatedBy)
-            .Where(x => x.PeriodStart.Date == start.Date && x.PeriodEnd.Date == end.Date)
+            .Where(x => x.PeriodStart == start && x.PeriodEnd == end)
             .OrderBy(x => x.RankPosition)
             .ToListAsync();
 
         var prevLeaderboardData = await _dbContext.Leaderboards
-            .Where(x => x.PeriodStart.Date == prevStart.Date && x.PeriodEnd.Date == prevEnd.Date)
+            .Where(x => x.PeriodStart == prevStart && x.PeriodEnd == prevEnd)
             .Select(x => new { x.SeriesId, x.TotalVotes })
             .ToListAsync();
 
@@ -352,10 +350,6 @@ public class Service : IService
             {
                 double percentChange = (double)(item.TotalVotes - prevVotes) / prevVotes * 100;
                 change = percentChange > 0 ? $"+{percentChange:F1}%" : $"{percentChange:F1}%";
-            }
-            else if (prevLeaderboard.TryGetValue(item.SeriesId, out int pv) && pv == 0 && item.TotalVotes > 0)
-            {
-                change = "+100%";
             }
 
             result.Add(new Response.LeaderboardResponse
