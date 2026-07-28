@@ -74,7 +74,7 @@ public class MangaTaskController : ControllerBase
         return Ok(ApiResponseFactory.SuccessResponse(result, "Task Deadline Updated Successfully", HttpContext.TraceIdentifier));
     }
 
-    [Authorize(Policy = JwtExtensions.MangakaPolicy)]
+    [Authorize]
     [HttpGet("process-task")]
     public async Task<IActionResult> GetProcessOfChapter([FromQuery] Request.GetTaskListRequest request)
     {
