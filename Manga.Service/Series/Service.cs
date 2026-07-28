@@ -200,7 +200,7 @@ public class Service: IService
             }
         }
         
-        var chapters = series.Chapters.OrderBy(c => c.ChapterNumber)
+        var chapters = series.Chapters.OrderByDescending(c => c.ChapterNumber)
             .Select(c => new Response.ChapterSummary()
             {
                 ChapterId = c.Id,
