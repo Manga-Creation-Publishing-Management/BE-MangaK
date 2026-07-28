@@ -225,9 +225,9 @@ public class Service: IService
             PublishPeriod = series.PublishingSchedule?.PublishPeriod,
             NextChapterPublishDate = nextChapterDate,
             CreateAt = series.CreatedAt,
-            Chapters =  chapters
+            Chapters =  chapters,
+            UpdatedAt = series.UpdatedAt, 
         };
-        
     }
 
     public async Task<List<Response.GetAllSeriesResponse>> GetSeriesByTitle(string title)
