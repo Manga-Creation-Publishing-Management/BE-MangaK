@@ -372,7 +372,7 @@ public class Service : IService
          <head>
              <meta charset="UTF-8" />
              <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-             <title>Mangaka Verification</title>
+             <title>MangaK Verification</title>
          </head>
 
          <body style="
@@ -417,7 +417,7 @@ public class Service : IService
                             font-weight:800; 
                             color:#FF9F43; 
                             border:1px solid #FFE0C2;
-                         ">Mangaka</div>
+                         ">MangaK</div>
 
                          <p style="
                              margin:16px 0 0;
@@ -599,7 +599,7 @@ public class Service : IService
                              color:#B2A7C4;
                              font-size:12px;
                          ">
-                             © 2026 Mangaka. All rights reserved.
+                             © 2026 MangaK. All rights reserved.
                          </p>
 
                      </td>
