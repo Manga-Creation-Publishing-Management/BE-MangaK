@@ -60,7 +60,7 @@ public class Service : IService
             Reader = null,
             DeviceFingerprint = request.DeviceFingerprint ?? "Unknown",
             RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            ExpiresAt = DateTime.UtcNow.AddDays(2),
             IsRevoked = false,
             CreatedAt = DateTimeOffset.UtcNow
         };

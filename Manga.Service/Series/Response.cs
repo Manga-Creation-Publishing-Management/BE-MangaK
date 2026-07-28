@@ -44,6 +44,7 @@ public class Response
        public string? PublishPeriod { get; set; }
        public DateTimeOffset? NextChapterPublishDate { get; set; }
        public DateTimeOffset CreateAt { get; set; }
+       public DateTimeOffset? UpdatedAt { get; set; }
        public List<ChapterSummary> Chapters { get; set; } = new();
     }
     
