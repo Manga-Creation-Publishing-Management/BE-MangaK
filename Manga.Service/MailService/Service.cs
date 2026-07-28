@@ -1,7 +1,7 @@
-﻿using MailKit.Net.Smtp;
-using MailKit.Security;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
-using MimeKit;
 
 namespace Manga.Service.MailService;
 
@@ -9,29 +9,40 @@ public class Service : IService
 {
     public MailOptions _mailOptions = new();
 
-    public Service(IConfiguration  configuration)
+    public Service(IConfiguration configuration)
     {
         configuration.GetSection("MailOptions").Bind(_mailOptions);
     }
+
     public async Task SendMail(MailContent mailContent)
     {
-        MimeMessage email = new();
-        email.Sender = new MailboxAddress(_mailOptions?.DisplayName, _mailOptions!.Mail);
-        email.From.Add(new MailboxAddress(_mailOptions?.DisplayName, _mailOptions!.Mail));
-        email.To.Add(MailboxAddress.Parse(mailContent.To));
-        email.Subject = mailContent.Subject;
+        if (string.IsNullOrEmpty(_mailOptions.ApiKey))
+        {
+            throw new Exception("Brevo API Key is missing. Please configure it in appsettings.json or Environment Variables.");
+        }
 
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Accept.Clear();
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.DefaultRequestHeaders.Add("api-key", _mailOptions.ApiKey);
 
-        BodyBuilder builder = new();
-        builder.HtmlBody = mailContent.Body;
-        email.Body = builder.ToMessageBody();
-        
-        using SmtpClient smtp = new();
+        var payload = new
+        {
+            sender = new { name = _mailOptions.DisplayName, email = _mailOptions.Mail },
+            to = new[] { new { email = mailContent.To } },
+            subject = mailContent.Subject,
+            htmlContent = mailContent.Body
+        };
 
-        await smtp.ConnectAsync(_mailOptions!.Host, _mailOptions.Port,
-            SecureSocketOptions.SslOnConnect); 
-        await smtp.AuthenticateAsync(_mailOptions.Mail, _mailOptions.Password);
-        await smtp.SendAsync(email);
-        await smtp.DisconnectAsync(true);
+        var jsonPayload = JsonSerializer.Serialize(payload);
+        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("https://api.brevo.com/v3/smtp/email", content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseString = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed to send email via Brevo. Status Code: {response.StatusCode}. Response: {responseString}");
+        }
     }
 }
